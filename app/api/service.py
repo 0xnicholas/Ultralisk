@@ -10,6 +10,7 @@ from __future__ import annotations
 import time
 from dataclasses import dataclass, field
 
+from app import tracing
 from app.inference.base import ChatMessage, InferenceBackend, InferenceError, InferenceRequest
 from app.logging_config import log_request, new_request_id
 from app.metrics import (
@@ -22,7 +23,6 @@ from app.metrics import (
 from app.quota.service import QuotaExceeded, QuotaPolicy, QuotaService
 from app.safety.pipeline import SafetyPipeline
 from app.safety.streaming import StreamingModerator
-from app import tracing
 
 
 class RequestRejected(Exception):

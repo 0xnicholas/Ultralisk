@@ -41,7 +41,11 @@ class Settings:
     # 审核模型(OpenAI 兼容端点;仅非流式路径生效)
     safety_model_enabled: bool = field(default_factory=lambda: os.environ.get("SAFETY_MODEL_ENABLED", "0") == "1")
     safety_model_base_url: str = field(default_factory=lambda: os.environ.get("SAFETY_MODEL_BASE_URL", "http://localhost:8002"))
-    safety_model_name: str = field(default_factory=lambda: os.environ.get("SAFETY_MODEL_NAME", "meta-llama/Llama-Guard-3-8B"))
+    safety_model_name: str = field(
+        default_factory=lambda: os.environ.get(
+            "SAFETY_MODEL_NAME", "meta-llama/Llama-Guard-3-8B"
+        )
+    )
     safety_model_api_key: str = field(default_factory=lambda: os.environ.get("SAFETY_MODEL_API_KEY", ""))
     safety_model_timeout: float = field(default_factory=lambda: float(os.environ.get("SAFETY_MODEL_TIMEOUT", "10")))
     # fail-open: 审核服务不可用时放行(可用性优先)。⚠️ 合规场景可能需 fail-closed,上线前确认。

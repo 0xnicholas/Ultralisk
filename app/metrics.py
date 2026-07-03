@@ -8,7 +8,7 @@ prometheus_client 为可选依赖:未安装时降级为 no-op,核心逻辑仍可
 from __future__ import annotations
 
 try:
-    from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+    from prometheus_client import CONTENT_TYPE_LATEST, Counter, Histogram, generate_latest
 
     _ENABLED = True
 except Exception:  # pragma: no cover - 依赖缺失降级
