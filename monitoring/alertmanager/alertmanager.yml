@@ -1,0 +1,15 @@
+# Alertmanager:告警路由(推送到 Slack/企业微信/钉钉)
+# webhook 地址替换为实际值。
+route:
+  receiver: default
+  group_by: ["alertname", "severity"]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 3h
+
+receivers:
+  - name: default
+    # 示例:webhook。生产替换为 slack_configs / wechat_configs 等。
+    webhook_configs:
+      - url: "http://example.invalid/alert-webhook"
+        send_resolved: true
