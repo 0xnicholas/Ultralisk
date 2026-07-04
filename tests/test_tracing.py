@@ -24,6 +24,7 @@ def run(coro):
 @pytest.fixture
 def in_memory_tracing():
     """启用 tracing,导出到内存,便于断言。用后还原 no-op。"""
+    pytest.importorskip("opentelemetry")
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import SimpleSpanProcessor
     from opentelemetry.sdk.trace.export.in_memory_span_exporter import InMemorySpanExporter
