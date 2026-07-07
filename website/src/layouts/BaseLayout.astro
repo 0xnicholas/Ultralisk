@@ -1,0 +1,35 @@
+---
+import '../styles/global.css';
+
+export interface Props {
+  title: string;
+  description: string;
+}
+
+const { title, description } = Astro.props;
+const navLinks = [
+  { href: '/architecture', label: 'Architecture' },
+  { href: '/modules', label: 'Modules' },
+  { href: '/quickstart', label: 'Quickstart' },
+  { href: '/about', label: 'About' },
+];
+---
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <title>{title} · Ultralisk</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={`${title} · Ultralisk`} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:type" content="website" />
+    <slot name="head" />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
