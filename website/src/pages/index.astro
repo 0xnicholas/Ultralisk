@@ -17,10 +17,10 @@ if (!home) throw new Error('home.md content not found');
 const { Content } = await render(home);
 
 const moduleCards = [
-  { title: 'Auth & Quota', claim: 'API keys, rate limits, token quotas — with clear 429s.', illustration: authSvg, slug: 'auth' },
-  { title: 'Observability', claim: 'TTFT, TPOT, throughput — Prometheus metrics out of the box.', illustration: obsSvg, slug: 'observability' },
-  { title: 'Safety', claim: 'Jailbreak + sensitive output filtering, async moderation-ready.', illustration: safetySvg, slug: 'safety' },
-  { title: 'Logging & Tracing', claim: 'One `request_id`, full timeline. OTel + JSON logs.', illustration: logSvg, slug: 'logging' },
+  { title: 'Auth & Quota', claim: 'Stop runaway usage. Quotas return 429s the moment you cross the line.', illustration: authSvg, slug: 'auth' },
+  { title: 'Observability', claim: 'TTFT, queue depth, quota rejections. Prometheus metrics out of the box.', illustration: obsSvg, slug: 'observability' },
+  { title: 'Safety', claim: 'Jailbreak + sensitive-output filtering. Rule engine first, async model second.', illustration: safetySvg, slug: 'safety' },
+  { title: 'Logging & Tracing', claim: 'Full request timeline from one request_id. JSON logs + OTel spans.', illustration: logSvg, slug: 'logging' },
 ];
 ---
 
