@@ -115,7 +115,6 @@ git commit -m "chore(website): bootstrap empty directory with .gitignore + place
     "astro": "^7.0.6",
     "@astrojs/mdx": "^7.0.2",
     "@astrojs/sitemap": "^3.2.1",
-    "@astrojs/cloudflare": "^14.1.1",
     "@tailwindcss/vite": "^4.3.2",
     "tailwindcss": "^4.3.2",
     "@fontsource/inter": "^5.2.8",
@@ -144,14 +143,12 @@ git commit -m "chore(website): bootstrap empty directory with .gitignore + place
 import { defineConfig } from 'astro/config';
 import mdx from '@astrojs/mdx';
 import sitemap from '@astrojs/sitemap';
-import cloudflare from '@astrojs/cloudflare';
 import tailwindcss from '@tailwindcss/vite';
 
 // https://astro.build/config
 export default defineConfig({
   site: 'https://ultralisk.pages.dev',
   output: 'static',
-  adapter: cloudflare(),
   integrations: [mdx(), sitemap()],
   vite: {
     plugins: [tailwindcss()],
@@ -160,6 +157,8 @@ export default defineConfig({
   compressHTML: false,
 });
 ```
+
+> **Note:** No `adapter` is needed for `output: 'static'` — adapters are only required for SSR (`output: 'server'` or `'hybrid'`). Re-add `@astrojs/cloudflare` later if SSR features are introduced.
 
 - [ ] **Step 4: Install dependencies**
 
@@ -344,6 +343,8 @@ const navLinks = [
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preload" href="/fonts/inter-400.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/inter-700.woff2" as="font" type="font/woff2" crossorigin />
     <title>{title} · Ultralisk</title>
     <meta name="description" content={description} />
     <meta property="og:title" content={`${title} · Ultralisk`} />
@@ -662,7 +663,7 @@ const { code, language = 'bash' } = Astro.props;
     btn.addEventListener('click', async () => {
       const code = btn.getAttribute('data-code') ?? '';
       await navigator.clipboard.writeText(code);
-      const original = btn.textContent;
+      const original = (btn.textContent ?? '').trim();
       btn.textContent = 'Copied!';
       setTimeout(() => { btn.textContent = original; }, 1500);
     });
@@ -996,7 +997,7 @@ mkdir -p website/src/pages website/src/assets/illustrations
 
 ```astro
 ---
-import { getEntry } from 'astro:content';
+import { getEntry, render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
@@ -1005,8 +1006,9 @@ import Button from '../components/Button.astro';
 import ModuleCard from '../components/ModuleCard.astro';
 import ArchitectureDiagram from '../components/ArchitectureDiagram.astro';
 
-const home = await getEntry('pages', 'home');
+const home = await getEntry({ collection: 'pages', id: 'home' });
 if (!home) throw new Error('home.md content not found');
+const { Content } = await render(home);
 
 // Placeholder illustrations (full SVGs added in Phase 6)
 const moduleCards = [
@@ -1022,7 +1024,7 @@ const moduleCards = [
   <main>
     <Hero>
       <Fragment slot="title">{home.data.title}</Fragment>
-      <Fragment slot="subtitle">{home.data.body}</Fragment>
+      <Fragment slot="subtitle"><Content /></Fragment>
       <Fragment slot="ctas">
         <Button href="/quickstart" variant="primary">Quickstart →</Button>
         <Button href="https://github.com/nicholasli/ultralisk" variant="secondary" external>View on GitHub ↗</Button>
@@ -1097,14 +1099,18 @@ git commit -m "feat(website): Home page with hero, value props, module grid, arc
 
 ```astro
 ---
-import { getEntry } from 'astro:content';
+import { getEntry, render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import ArchitectureDiagram from '../components/ArchitectureDiagram.astro';
 
-const page = await getEntry('pages', 'architecture');
+const page = await getEntry({ collection: 'pages', id: 'architecture' });
 if (!page) throw new Error('architecture.md content not found');
+const { Content } = await render(page);
+
+// Note: This page does NOT use ModuleCard — the architecture diagram is the
+// visual centerpiece, not a card grid.
 ---
 
 <BaseLayout title={page.data.title} description={page.data.description}>
@@ -1115,7 +1121,7 @@ if (!page) throw new Error('architecture.md content not found');
         Built in layers. Swappable at every seam.
       </h1>
       <p class="mt-6 text-lg text-[#94A3B8] max-w-2xl leading-relaxed">
-        {page.data.body}
+        <Content />
       </p>
     </section>
 
@@ -1169,7 +1175,7 @@ import Footer from '../components/Footer.astro';
 import ModuleCard from '../components/ModuleCard.astro';
 import Button from '../components/Button.astro';
 
-const page = await getEntry('pages', 'modules');
+const page = await getEntry({ collection: 'pages', id: 'modules' });
 if (!page) throw new Error('modules.md content not found');
 
 // Each module's bullets are embedded as HTML in modules.md
@@ -1206,7 +1212,7 @@ const modules = [
 </BaseLayout>
 ```
 
-> **Note on duplication:** Module bullets/claims are duplicated between `modules.md` (content collection, single source of truth for prose) and this page (typed objects passed to `ModuleCard`). To eliminate duplication: in Phase 8, refactor to load bullets from `modules.md` frontmatter or a separate `modules/*.json` collection. For v0.1, duplication is acceptable.
+> **Note on duplication:** Module bullets/claims are duplicated between `modules.md` (content collection, for SEO crawlability and as a single source of truth for prose) and this page (typed objects passed to `ModuleCard`). For v0.1, this duplication is intentional and acceptable — both sources must be updated together. Future v1 refactor: load bullets from a typed JSON collection.
 
 - [ ] **Step 2: Verify build**
 
@@ -1239,7 +1245,7 @@ import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 import CodeBlock from '../components/CodeBlock.astro';
 
-const page = await getEntry('pages', 'quickstart');
+const page = await getEntry({ collection: 'pages', id: 'quickstart' });
 if (!page) throw new Error('quickstart.md content not found');
 
 const quickstartCode = `git clone https://github.com/nicholasli/ultralisk.git
@@ -1312,13 +1318,14 @@ git commit -m "feat(website): Quickstart page with single CodeBlock + README lin
 
 ```astro
 ---
-import { getEntry } from 'astro:content';
+import { getEntry, render } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Nav from '../components/Nav.astro';
 import Footer from '../components/Footer.astro';
 
-const page = await getEntry('pages', 'about');
+const page = await getEntry({ collection: 'pages', id: 'about' });
 if (!page) throw new Error('about.md content not found');
+const { Content } = await render(page);
 ---
 
 <BaseLayout title={page.data.title} description={page.data.description}>
@@ -1329,7 +1336,7 @@ if (!page) throw new Error('about.md content not found');
         Born in a data center.
       </h1>
       <div class="mt-12 space-y-6 text-lg text-[#E5E7EB] leading-relaxed">
-        <p>{page.data.body}</p>
+        <Content />
       </div>
     </article>
   </main>
@@ -1765,6 +1772,8 @@ Expected: Performance ≥ 90, Accessibility ≥ 90, Best Practices ≥ 90, SEO �
 
 - [ ] **Step 3: Document results**
 
+If Performance < 90 and the issue is font loading, add `<link rel="preload" as="font" crossorigin>` for the Inter 400 woff2 to BaseLayout.astro and copy the font file to `public/fonts/`. The source file is at `node_modules/@fontsource/inter/files/inter-latin-400-normal.woff2` (verify exact filename on first install).
+
 If any score < 90, file an issue with the score + URL. Don't try to fix in this plan.
 
 - [ ] **Step 4: Kill preview**
@@ -1794,14 +1803,16 @@ Append to `website/README.md`:
 2. Pages → Create application → Connect to Git → select `nicholasli/ultralisk`
 3. Build settings:
    - **Framework preset**: Astro
-   - **Build command**: `cd website && npm install && npm run build`
-   - **Build output directory**: `website/dist`
    - **Root directory**: `website`
+   - **Build command**: `npm install && npm run build`
+   - **Build output directory**: `dist`
    - **Node version**: 20 (or higher)
 4. Environment variables: none required for v0.1
 5. Save and deploy
 
 Future pushes to `main` will auto-deploy.
+
+> **Important:** When `Root directory` is set to `website`, all other paths are interpreted relative to it. So the build command should NOT `cd website` (you're already there), and the output directory is just `dist` (not `website/dist`). This was a path-resolution bug in earlier plan versions — make sure the Cloudflare dashboard reflects the values above.
 ```
 
 - [ ] **Step 2: Commit**
