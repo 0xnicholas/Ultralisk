@@ -7,17 +7,20 @@ import Hero from '../components/Hero.astro';
 import Button from '../components/Button.astro';
 import ModuleCard from '../components/ModuleCard.astro';
 import ArchitectureDiagram from '../components/ArchitectureDiagram.astro';
+import authSvg from '../assets/illustrations/auth.svg?raw';
+import obsSvg from '../assets/illustrations/observability.svg?raw';
+import safetySvg from '../assets/illustrations/safety.svg?raw';
+import logSvg from '../assets/illustrations/logging.svg?raw';
 
 const home = await getEntry({ collection: 'pages', id: 'home' });
 if (!home) throw new Error('home.md content not found');
 const { Content } = await render(home);
 
-// Placeholder illustrations (full SVGs added in Phase 6)
 const moduleCards = [
-  { title: 'Auth & Quota', claim: 'API keys, rate limits, token quotas — with clear 429s.', slug: 'auth' },
-  { title: 'Observability', claim: 'TTFT, TPOT, throughput — Prometheus metrics out of the box.', slug: 'observability' },
-  { title: 'Safety', claim: 'Jailbreak + sensitive output filtering, async moderation-ready.', slug: 'safety' },
-  { title: 'Logging & Tracing', claim: 'One `request_id`, full timeline. OTel + JSON logs.', slug: 'logging' },
+  { title: 'Auth & Quota', claim: 'API keys, rate limits, token quotas — with clear 429s.', illustration: authSvg, slug: 'auth' },
+  { title: 'Observability', claim: 'TTFT, TPOT, throughput — Prometheus metrics out of the box.', illustration: obsSvg, slug: 'observability' },
+  { title: 'Safety', claim: 'Jailbreak + sensitive output filtering, async moderation-ready.', illustration: safetySvg, slug: 'safety' },
+  { title: 'Logging & Tracing', claim: 'One `request_id`, full timeline. OTel + JSON logs.', illustration: logSvg, slug: 'logging' },
 ];
 ---
 
@@ -50,7 +53,7 @@ const moduleCards = [
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {moduleCards.map(card => (
           <a href="/modules" class="block">
-            <ModuleCard title={card.title} claim={card.claim} variant="compact" />
+            <ModuleCard title={card.title} claim={card.claim} illustration={card.illustration} variant="compact" />
           </a>
         ))}
       </div>
