@@ -54,7 +54,7 @@ Future pushes to `main` will auto-deploy.
 
 ## Project structure
 
-See [`docs/superpowers/specs/2026-07-07-ultralisk-website-design.md`](../specs/2026-07-07-ultralisk-website-design.md) for the full design spec.
+See [`docs/superpowers/specs/2026-07-07-ultralisk-website-design.md`](../docs/superpowers/specs/2026-07-07-ultralisk-website-design.md) for the full design spec.
 
 ```
 website/

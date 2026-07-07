@@ -16,7 +16,7 @@ const { code, language = 'bash' } = Astro.props;
   >
     Copy
   </button>
-  <pre class={`language-${language} overflow-x-auto p-6 text-sm leading-relaxed font-mono text-[#E5E7EB]`}><code>{code}</code></pre>
+  <pre class={`language-${language} overflow-x-auto p-6 text-sm leading-relaxed font-mono text-[#E5E7EB]`}><code set:html={code} /></pre>
 </div>
 
 <script>
