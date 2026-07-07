@@ -1,0 +1,32 @@
+---
+export interface Props {
+  code: string;
+  language?: string;
+}
+
+const { code, language = 'bash' } = Astro.props;
+---
+
+<div class="relative border border-[#1F2937] rounded-lg bg-[#11151C] overflow-hidden">
+  <button
+    type="button"
+    data-code={code}
+    class="copy-btn absolute top-3 right-3 text-xs px-3 py-1.5 rounded border border-[#1F2937] text-[#94A3B8] hover:border-[#06B6D4] hover:text-[#06B6D4] transition-colors"
+    aria-label="Copy code to clipboard"
+  >
+    Copy
+  </button>
+  <pre class={`language-${language} overflow-x-auto p-6 text-sm leading-relaxed font-mono text-[#E5E7EB]`}><code set:html={code} /></pre>
+</div>
+
+<script>
+  document.querySelectorAll('.copy-btn').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const code = btn.getAttribute('data-code') ?? '';
+      await navigator.clipboard.writeText(code);
+      const original = (btn.textContent ?? '').trim();
+      btn.textContent = 'Copied!';
+      setTimeout(() => { btn.textContent = original; }, 1500);
+    });
+  });
+</script>

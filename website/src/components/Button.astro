@@ -1,0 +1,22 @@
+---
+export interface Props {
+  href: string;
+  variant?: 'primary' | 'secondary' | 'ghost';
+  external?: boolean;
+}
+
+const { href, variant = 'primary', external = false } = Astro.props;
+
+const baseClasses = 'inline-flex items-center gap-2 px-6 py-3 rounded-md text-sm font-medium transition-colors';
+const variantClasses = {
+  primary: 'bg-[#06B6D4] text-[#0B0E14] hover:bg-[#22D3EE]',
+  secondary: 'border border-[#1F2937] text-[#E5E7EB] hover:border-[#06B6D4] hover:text-[#06B6D4]',
+  ghost: 'text-[#06B6D4] hover:text-[#22D3EE]',
+};
+
+const externalAttrs = external ? { target: '_blank', rel: 'noopener noreferrer' } : {};
+---
+
+<a href={href} class={`${baseClasses} ${variantClasses[variant]}`} {...externalAttrs}>
+  <slot />
+</a>

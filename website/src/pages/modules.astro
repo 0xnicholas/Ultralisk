@@ -1,0 +1,50 @@
+---
+import { getEntry } from 'astro:content';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import ModuleCard from '../components/ModuleCard.astro';
+import Button from '../components/Button.astro';
+import authSvg from '../assets/illustrations/auth.svg?raw';
+import obsSvg from '../assets/illustrations/observability.svg?raw';
+import safetySvg from '../assets/illustrations/safety.svg?raw';
+import logSvg from '../assets/illustrations/logging.svg?raw';
+
+const page = await getEntry({ collection: 'pages', id: 'modules' });
+if (!page) throw new Error('modules.md content not found');
+
+const modules = [
+  { title: 'Auth & Quota', claim: 'Stop runaway usage before it hits your GPU bill. Daily and monthly quotas return 429s the moment a caller crosses the line.', bullets: ['API Key authentication at the gateway', 'QPS rate limits (per consumer tier)', 'Daily and monthly token quotas', 'Clear 429 responses with Retry-After header'], illustration: authSvg, learnMoreHref: 'https://github.com/nicholasli/ultralisk/blob/main/README.md#%E6%A8%A1%E5%9D%97%E4%B8%80%E9%89%B4%E6%9D%83%E4%B8%8E%E9%99%90%E6%B5%81' },
+  { title: 'Observability', claim: 'See latency and error rates at every stage. TTFT, queue depth, and quota rejections — Prometheus metrics out of the box.', bullets: ['TTFT, TPOT, throughput metrics', 'GPU utilization + memory tracking', 'Per-stage error breakdown', 'Grafana dashboards ready to import'], illustration: obsSvg, learnMoreHref: 'https://github.com/nicholasli/ultralisk/blob/main/README.md#%E6%A8%A1%E5%9D%97%E4%BA%8C%E7%9B%91%E6%8E%A7' },
+  { title: 'Safety', claim: 'Catch jailbreak prompts and sensitive output before it reaches the user. Rule engine first, model second, both async-friendly.', bullets: ['DFA-based jailbreak + sensitive-word detection', 'Async moderation model (Llama Guard compatible)', 'Streaming-safe output sanitization', 'Block / redact / log actions per stage'], illustration: safetySvg, learnMoreHref: 'https://github.com/nicholasli/ultralisk/blob/main/README.md#%E6%A8%A1%E5%9D%97%E4%B8%89%E5%86%85%E5%AE%B9%E5%AE%89%E5%85%A8' },
+  { title: 'Logging & Tracing', claim: 'Reconstruct any request end-to-end from a single request_id. Structured JSON + OTel spans, ready for Loki or Tempo.', bullets: ['One request_id per request, full timeline', 'Structured JSON logs with token usage', 'OTel spans across all stages', 'Loki / Tempo ready'], illustration: logSvg, learnMoreHref: 'https://github.com/nicholasli/ultralisk/blob/main/README.md#%E6%A8%A1%E5%9D%97%E5%9B%9B%E6%97%A5%E5%BF%97%E4%B8%8E%E8%BF%BD%E8%B8%AA' },
+];
+
+// Note on duplication: Module bullets/claims are duplicated between modules.md
+// (content collection, for SEO crawlability) and this page (typed objects passed
+// to ModuleCard). For v0.1, this duplication is intentional and acceptable —
+// both sources must be updated together. Future v1 refactor: load bullets
+// from a typed JSON collection.
+---
+
+<BaseLayout title={page.data.title} description={page.data.description}>
+  <Nav />
+  <main>
+    <section class="max-w-[1200px] mx-auto px-6 pt-24 pb-12">
+      <h1 class="text-4xl md:text-6xl font-bold leading-tight tracking-tight text-[#E5E7EB]">
+        Four modules. One stack.
+      </h1>
+    </section>
+
+    <section class="max-w-[1200px] mx-auto px-6 py-12 space-y-8">
+      {modules.map(m => (
+        <ModuleCard title={m.title} claim={m.claim} bullets={m.bullets} illustration={m.illustration} learnMoreHref={m.learnMoreHref} variant="full" />
+      ))}
+    </section>
+
+    <section class="max-w-[1200px] mx-auto px-6 py-24 text-center">
+      <Button href="/quickstart" variant="primary">Quickstart →</Button>
+    </section>
+  </main>
+  <Footer />
+</BaseLayout>

@@ -1,0 +1,9 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="#11151C"/>
+  <!-- Shield -->
+  <path d="M 100 30 L 160 50 L 160 110 Q 160 150 100 175 Q 40 150 40 110 L 40 50 Z" fill="none" stroke="#06B6D4" stroke-width="3"/>
+  <!-- Lock body -->
+  <rect x="80" y="100" width="40" height="40" rx="3" fill="#06B6D4"/>
+  <!-- Lock shackle -->
+  <path d="M 88 100 L 88 88 Q 88 78 100 78 Q 112 78 112 88 L 112 100" fill="none" stroke="#06B6D4" stroke-width="3"/>
+</svg>

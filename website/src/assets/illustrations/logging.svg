@@ -1,0 +1,17 @@
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <rect width="200" height="200" fill="#11151C"/>
+  <!-- Stacked docs -->
+  <rect x="40" y="40" width="80" height="100" rx="3" fill="none" stroke="#1F2937" stroke-width="1.5"/>
+  <rect x="50" y="50" width="80" height="100" rx="3" fill="none" stroke="#1F2937" stroke-width="1.5"/>
+  <rect x="60" y="60" width="80" height="100" rx="3" fill="none" stroke="#06B6D4" stroke-width="1.5"/>
+  <g stroke="#94A3B8" stroke-width="1">
+    <line x1="70" y1="80" x2="130" y2="80"/>
+    <line x1="70" y1="95" x2="125" y2="95"/>
+    <line x1="70" y1="110" x2="130" y2="110"/>
+  </g>
+  <!-- Timeline arrow -->
+  <line x1="30" y1="180" x2="170" y2="180" stroke="#06B6D4" stroke-width="1.5"/>
+  <circle cx="60" cy="180" r="3" fill="#06B6D4"/>
+  <circle cx="100" cy="180" r="3" fill="#06B6D4"/>
+  <circle cx="140" cy="180" r="3" fill="#06B6D4"/>
+</svg>
