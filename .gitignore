@@ -7,3 +7,6 @@ venv/
 *.egg-info/
 .mypy_cache/
 pgdata/
+
+# Worktrees (isolated workspaces per using-git-worktrees skill)
+.worktrees/
