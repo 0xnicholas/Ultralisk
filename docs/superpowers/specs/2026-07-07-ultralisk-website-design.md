@@ -1,7 +1,7 @@
 # Ultralisk Official Website — Design Spec
 
 **Date**: 2026-07-07
-**Status**: Draft — review round 3 (last review loop)
+**Status**: Final — pending owner review and OC items
 **Source**: Brainstorming session with project owner, plus spec-document review (see Review Log at bottom)
 
 ---
@@ -276,12 +276,12 @@ website/
 │   │   └── about.astro
 │   └── styles/
 │       └── global.css
-└── src/assets/
-    └── illustrations/
-        ├── auth.svg
-        ├── observability.svg
-        ├── safety.svg
-        └── logging.svg
+│   └── assets/
+│       └── illustrations/
+│           ├── auth.svg
+│           ├── observability.svg
+│           ├── safety.svg
+│           └── logging.svg
 ```
 
 ---
@@ -329,7 +329,7 @@ A v0.1 of the website is complete when **all** of the following are true:
 12. **No code blocks appear outside Quickstart. Total code blocks site-wide: exactly 1.**
 13. `favicon.svg`, `og-image.png`, and `robots.txt` exist in `public/`. `og-image.png` is exactly **1200×630 px** (standard OG dimensions). The Home `<head>` references it via `<meta property="og:image" content=".../og-image.png">`.
 14. `sitemap.xml` is generated and accessible at `/sitemap-index.xml` or `/sitemap.xml`.
-15. Every page has a unique `<meta name="description">` set via the BaseLayout named `head` slot.
+15. Every page has a unique `<meta name="description">` (≤ 155 chars, English) set via the BaseLayout named `head` slot.
 16. The wordmark `Ultralisk` in the nav renders in Inter 600 (text-only, no custom mark yet).
 17. Total CSS shipped (gzipped) ≤ 30 KB on the Home page.
 18. Total JS shipped ≤ 5 KB on the Home page (Astro default — no client islands unless explicitly justified).
@@ -375,10 +375,27 @@ These items need owner input — the implementer cannot author them from the res
 
 **Verdict**: 3 BLOCKERS, 11 RECOMMENDATIONS, 8 NITS.
 
-**Blockers addressed in this revision**:
+**Blockers addressed**:
 - **B1** (`compressHTML: 'auto'` invalid): replaced with `compressHTML: false` in §6.1. *(Round-2 reviewer noted that `'auto'` IS technically a valid Astro 7 value, but `false` remains the safer choice — note in §6.1 was softened accordingly.)*
 - **B2** (placeholder doc paths 404): replaced all `docs/<missing>` references with `README.md#<anchor>` links pointing to existing GitHub content (§3.2, §3.4.2 #4, §3.4.3 #2, §3.4.4 #4).
 - **B3** (component list inconsistency §4.4 vs §6.3): reconciled — `Card.astro` removed, `ModuleCard.astro` and `Button.astro` now appear in both lists (§4.4, §6.3).
+
+**Recommendations addressed**:
+- **R1** (Home doesn't fit ≤ 1 screen): §3.3 now explicitly allows Home ≤ 3 screens.
+- **R3** (Home SVG size unspecified): §4.5 now specifies two sizes (full on Modules page, compact on Home).
+- **R4** (`tailwind.config.ts` contradicts CSS-first claim): removed from §6.3; §6 explains tokens live in `global.css` via `@theme`.
+- **R5** (code-block count inconsistent): standardized to "exactly 1" in §3.3, §3.4.4 #3, §4.4, §8 #5, §8 #12.
+- **R7** (404/sitemap/robots/meta desc missing): in-scope decisions added to §7 and §6; acceptance items added in §8 #13–15.
+- **R8** (`danger` unused): removed from §4.1.
+- **R9** (OG image in structure but deferred): now in-scope per §7 + §8 #13.
+- **R10** (Architecture sub-paragraph tone directive): added tone directive in §3.4.2 #2; draft pending (OC1).
+- **R11** ("53 tests" fragile badge example): removed from §4.4.
+
+**Nits addressed**: N1 (grid 12 removed → 4/8/16/24/32/48/64/96), N2 (font weight import note added to §6), N5 ("wordmark" wording dropped from §3.2), N6 (Content Collections pattern clarified in §6.1), N8 (domain line canonicalized to §1 + §7 + §9 cross-reference).
+
+**Deferred to owner creative input** (see §9 Open Creative Items): R2 (module bullets), R6 (module 1-line claims + architecture sub-paragraph).
+
+**Nits deferred as judgment calls**: N3 (Auth & Quota illustration concept tightened but not rewritten — owner may refine), N4 ("Decouple your engine" tone — judgment call), N7 (Home Closing CTA duplication — kept as written; minor).
 
 ### Round 2 (2026-07-07) — reviewer subagent
 
@@ -401,19 +418,15 @@ These items need owner input — the implementer cannot author them from the res
 
 **Nits deferred as judgment calls**: N-1 through N-9 — minor polish, none gate the spec.
 
-**Recommendations addressed in this revision**:
-- **R1** (Home doesn't fit ≤ 1 screen): §3.3 now explicitly allows Home ≤ 3 screens.
-- **R3** (Home SVG size unspecified): §4.5 now specifies two sizes (full on Modules page, compact on Home).
-- **R4** (`tailwind.config.ts` contradicts CSS-first claim): removed from §6.3; §6 explains tokens live in `global.css` via `@theme`.
-- **R5** (code-block count inconsistent): standardized to "exactly 1" in §3.3, §3.4.4 #3, §4.4, §8 #5, §8 #12.
-- **R7** (404/sitemap/robots/meta desc missing): in-scope decisions added to §7 and §6; acceptance items added in §8 #13–15.
-- **R8** (`danger` unused): removed from §4.1.
-- **R9** (OG image in structure but deferred): now in-scope per §7 + §8 #13.
-- **R10** (Architecture sub-paragraph tone directive): added tone directive in §3.4.2 #2; draft pending (OC1).
-- **R11** ("53 tests" fragile badge example): removed from §4.4.
+### Round 3 (2026-07-07) — reviewer subagent
 
-**Nits addressed**: N1 (grid 12 removed → 4/8/16/24/32/48/64/96), N2 (font weight import note added to §6), N5 ("wordmark" wording dropped from §3.2), N6 (Content Collections pattern clarified in §6.1), N8 (domain line canonicalized to §1 + §7 + §9 cross-reference).
+**Verdict**: APPROVED — ready for user review. Final verification confirmed all 6 anchor links land on real README headers under GitHub's slug rules. No new regressions detected. Two cosmetic `<SEO>`-slot stragglers (§7 and §8 #15) and one over-spec (`navTitle` schema field) flagged; all cleaned up in the final-polish commit.
 
-**Deferred to owner creative input** (see §9 Open Creative Items): R2 (module bullets), R6 (module 1-line claims + architecture sub-paragraph).
+### Self-review (2026-07-07) — author pass before owner hand-off
 
-**Nits deferred as judgment calls**: N3 (Auth & Quota illustration concept tightened but not rewritten — owner may refine), N4 ("Decouple your engine" tone — judgment call), N7 (Home Closing CTA duplication — kept as written; minor).
+A fresh-eyes pass by the spec author caught four issues that had survived three reviewer rounds:
+
+- **§6.3 tree**: `src/assets/` was drawn at the wrong level (sibling of `src/`, not child). Fixed — now correctly nested under `src/`.
+- **§8 #15**: meta description acceptance criterion was missing the ≤155-char SEO limit mentioned in §6.1 and §9 OC4. Fixed.
+- **Review Log duplication**: Round 1's recommendations section was orphaned below Round 2's content from the second-round edit. Consolidated back under Round 1.
+- **Status header**: still read "review round 3 (last review loop)". Updated to "Final — pending owner review and OC items."
