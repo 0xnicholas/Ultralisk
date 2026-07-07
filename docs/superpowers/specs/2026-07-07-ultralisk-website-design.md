@@ -1,7 +1,7 @@
 # Ultralisk Official Website — Design Spec
 
 **Date**: 2026-07-07
-**Status**: Draft — review round 2
+**Status**: Draft — review round 3 (last review loop)
 **Source**: Brainstorming session with project owner, plus spec-document review (see Review Log at bottom)
 
 ---
@@ -52,7 +52,7 @@ ultralisk.dev/   (placeholder — actual URL is Cloudflare Pages default for v0.
   - Right: `GitHub ↗` (external link, opens new tab)
 - **Footer** (3-column, simple):
   - Col 1: `Ultralisk` + one-line positioning + © 2026
-  - Col 2: `GitHub` · `License (MIT)` · `Docs ↗` — the Docs link points to `README.md#architecture` on GitHub (placeholder until a docs site exists).
+  - Col 2: `GitHub` · `License (MIT)` · `Docs ↗` — the Docs link points to `README.md#架构` on GitHub (placeholder until a docs site exists).
   - Col 3: `Maintained by an anonymous data center` (subtle, gray)
 
 ### 3.3 Content Philosophy
@@ -82,14 +82,14 @@ ultralisk.dev/   (placeholder — actual URL is Cloudflare Pages default for v0.
 | 1 | **Headline** | "Built in layers. Swappable at every seam." |
 | 2 | **Sub-paragraph** | 1 short paragraph explaining the decoupling idea. **Tone directive**: matter-of-fact, ~2 sentences. Name the layers (gateway / app / inference) once. No bullet lists, no feature lists, no product-marketing hyperbole. Draft pending — see §5.4. |
 | 3 | **Big architecture diagram** | Inline SVG, fills the first screen. Cyan data-flow accents on dark. |
-| 4 | **Deep-dive link** | "Deep dive → `README.md#architecture` ↗" on GitHub. |
+| 4 | **Deep-dive link** | "Deep dive → `README.md#架构` ↗" on GitHub. |
 
 #### 3.4.3 Modules (`/modules`)
 
 | # | Section | Content |
 |---|---|---|
 | 1 | **Headline** | "Four modules. One stack." |
-| 2 | **4 stacked cards** | One card per module (Auth & Quota / Observability / Safety / Logging & Tracing). Each card: custom SVG illustration (~200×200px) + module title + 1-line value claim + 3–4 bullets in business language + "Learn more → `README.md#<section>` ↗" link to GitHub. |
+| 2 | **4 stacked cards** | One card per module. Each card: custom SVG illustration (~200×200px) + module title + 1-line value claim + 3–4 bullets in business language + "Learn more → `README.md#<anchor>` ↗" link to GitHub. Module→anchor mapping (GitHub slugs the Chinese headers by stripping colons and spaces):<br>• **Auth & Quota** → `README.md#模块一鉴权与限流`<br>• **Observability** → `README.md#模块二监控`<br>• **Safety** → `README.md#模块三内容安全`<br>• **Logging & Tracing** → `README.md#模块四日志与追踪` |
 | 3 | **Closing CTA** | → `Quickstart` |
 
 #### 3.4.4 Quickstart (`/quickstart`)
@@ -99,7 +99,7 @@ ultralisk.dev/   (placeholder — actual URL is Cloudflare Pages default for v0.
 | 1 | **Headline** | "Up and running in 60 seconds." |
 | 2 | **Prerequisites** | 2 lines: `Docker`, `Docker Compose`. |
 | 3 | **Single code block** | `git clone` → `docker-compose up -d` → `curl /v1/chat/completions`. JetBrains Mono, copy button. **Exactly one code block on the whole site.** |
-| 4 | **Full-guide link** | "Full guide → `README.md#quick-start` ↗" on GitHub. |
+| 4 | **Full-guide link** | "Full guide → `README.md#快速开始` ↗" on GitHub. |
 
 #### 3.4.5 About (`/about`)
 
@@ -224,13 +224,15 @@ Style: line + flat-color mix. Cyan primary (`#06B6D4`), dark gray (`#1F2937` / `
 | Deployment | **Cloudflare Pages** | GitHub auto-build, edge cache, free tier. Use the default Pages URL until a domain is decided (see §9). |
 | Fonts | Inter + JetBrains Mono via `@fontsource` (self-hosted) | No Google Fonts dependency. Import only the weights used: `inter/400.css`, `inter/600.css`, `inter/700.css`, `jetbrains-mono/400.css`. Add `<link rel="preload">` for the body weight (Inter 400) in `BaseLayout.astro`. |
 | SEO | `@astrojs/sitemap` | Generates `sitemap.xml` automatically. Pair with `public/robots.txt`. |
-| SEO | Per-page `<meta name="description">` | Required for Lighthouse SEO ≥ 90 (see §8 #9). Implemented via Astro's `<SEO>` slot pattern in `BaseLayout.astro`. |
+| Meta tags | Per-page `<meta name="description">` | Required for Lighthouse SEO ≥ 90 (see §8 #9). Implemented via Astro's named `head` slot pattern in `BaseLayout.astro` (`<slot name="head" />`; pages fill via `<Fragment slot="head"><meta .../></Fragment>`). |
 
 ### 6.1 Astro 7 Configuration Notes
 
-- Set `compressHTML: false` **explicitly** in `astro.config.mjs`. Astro 7's default `'jsx'` strips whitespace and may break the format of the Quickstart code block. (`'auto'` is **not** a valid value — would fail schema validation.)
+- Set `compressHTML: false` **explicitly** in `astro.config.mjs`. Astro 7's default `'jsx'` strips whitespace in JSX-rendered children and may break the format of the Quickstart code block. (Astro 7 does accept `'auto'` as a valid value, but `'auto'` may still collapse whitespace in `<pre>` text nodes; `false` is the safest choice for our use case.)
 - Pin the Tailwind v4 + Astro 7 compatibility on first install; document any required versions in `website/README.md`.
+- Pin Node engines in `website/package.json`: `"engines": { "node": ">=20.3.0" }` (Astro 7 minimum).
 - **Content Collections pattern**: each page is a thin wrapper. `src/pages/<route>.astro` imports its content from `src/content/<page>.md` via `getEntry('<page>')`, then renders via `BaseLayout.astro`. Pages contain zero prose — all copy lives in the content collection. This lets non-engineers edit page copy without touching Astro components.
+- **Content Collection schema**: declare the 5 collections in `src/content.config.ts` (or `src/content/config.ts`) with a Zod schema so typos in frontmatter are caught at build time. Each `.md` file declares `title`, `description` (≤ 155 chars), and `navTitle` (optional override for the top nav).
 
 ### 6.2 Project Location
 
@@ -325,7 +327,7 @@ A v0.1 of the website is complete when **all** of the following are true:
 10. All external links open in a new tab with `rel="noopener noreferrer"`.
 11. `website/README.md` documents how to develop (`npm run dev`), build (`npm run build`), and deploy.
 12. **No code blocks appear outside Quickstart. Total code blocks site-wide: exactly 1.**
-13. `favicon.svg`, `og-image.png`, and `robots.txt` exist in `public/`. The OG image renders correctly in a Slack/Twitter preview when the site URL is shared.
+13. `favicon.svg`, `og-image.png`, and `robots.txt` exist in `public/`. `og-image.png` is exactly **1200×630 px** (standard OG dimensions). The Home `<head>` references it via `<meta property="og:image" content=".../og-image.png">`.
 14. `sitemap.xml` is generated and accessible at `/sitemap-index.xml` or `/sitemap.xml`.
 15. Every page has a unique `<meta name="description">` set via the BaseLayout `<SEO>` slot.
 16. The wordmark `Ultralisk` in the nav renders in Inter 600 (text-only, no custom mark yet).
@@ -358,6 +360,7 @@ These items need owner input — the implementer cannot author them from the res
   - **Safety**: "Catch jailbreak prompts and sensitive output before it reaches the user. Rule engine first, model second, both async-friendly."
   - **Logging & Tracing**: "Reconstruct any request end-to-end from a single `request_id`. Structured JSON + OTel spans, ready for Loki or Tempo."
 - **OC3. Module card bullets** (3–4 per module). Once OC2 is anchored, the owner should approve or amend 1 sample bullet per module to set the register; the implementer mirrors the tone for the rest.
+- **OC4. Per-page `<meta name="description">`** (one per page, 5 total, ≤ 155 chars each, English). Required by §8 #15. Suggested tone: benefit-led, parallel structure across pages, no marketing-speak. Example shape for Home (owner may override): _"Production-grade LLM API infrastructure. Wrap your inference engine with auth, observability, safety, and logging. Open source."_
 
 ### Tech-stack notes
 
@@ -373,9 +376,30 @@ These items need owner input — the implementer cannot author them from the res
 **Verdict**: 3 BLOCKERS, 11 RECOMMENDATIONS, 8 NITS.
 
 **Blockers addressed in this revision**:
-- **B1** (`compressHTML: 'auto'` invalid): replaced with `compressHTML: false` in §6.1.
+- **B1** (`compressHTML: 'auto'` invalid): replaced with `compressHTML: false` in §6.1. *(Round-2 reviewer noted that `'auto'` IS technically a valid Astro 7 value, but `false` remains the safer choice — note in §6.1 was softened accordingly.)*
 - **B2** (placeholder doc paths 404): replaced all `docs/<missing>` references with `README.md#<anchor>` links pointing to existing GitHub content (§3.2, §3.4.2 #4, §3.4.3 #2, §3.4.4 #4).
 - **B3** (component list inconsistency §4.4 vs §6.3): reconciled — `Card.astro` removed, `ModuleCard.astro` and `Button.astro` now appear in both lists (§4.4, §6.3).
+
+### Round 2 (2026-07-07) — reviewer subagent
+
+**Verdict**: 1 BLOCKER (regression of B2 — README anchors were English slugs but README is in Chinese), 7 RECOMMENDATIONS, 9 NITS.
+
+**Blocker addressed in this revision**:
+- **B-1** (README anchor slugs were English but README headers are Chinese): all anchor links updated to use the actual Chinese GitHub slugs (`#架构`, `#快速开始`, `#模块一鉴权与限流`, `#模块二监控`, `#模块三内容安全`, `#模块四日志与追踪`) in §3.2, §3.4.2 #4, §3.4.3 #2, §3.4.4 #4. Per-module anchor mapping table added to §3.4.3 #2.
+
+**Recommendations addressed in this revision**:
+- **R-1** (invalid `'auto'` claim in §6.1): softened — now accurately notes `'auto'` is valid in Astro 7 but `false` is the safer choice.
+- **R-2** (module→anchor mapping): added inline in §3.4.3 #2.
+- **R-3** (`<SEO>` slot terminology): renamed to "named `head` slot pattern" in §6 + §8.
+- **R-4** (OG image dimensions + test): added 1200×630 px spec to §8 #13; meta-tag reference requirement included.
+- **R-6** (meta descriptions not drafted): added OC4 to §9.
+- **R-7** (Node engines not pinned): added `"engines": { "node": ">=20.3.0" }` requirement to §6.1.
+- **Bonus** (Content Collections schema file): added `src/content.config.ts` note + schema fields in §6.1.
+
+**Recommendation deferred**:
+- **R-5** (end-to-end smoke acceptance after deploy): deferred to a future iteration; Cloudflare Pages preview deploys are sufficient for v0.1.
+
+**Nits deferred as judgment calls**: N-1 through N-9 — minor polish, none gate the spec.
 
 **Recommendations addressed in this revision**:
 - **R1** (Home doesn't fit ≤ 1 screen): §3.3 now explicitly allows Home ≤ 3 screens.
