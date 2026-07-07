@@ -343,8 +343,6 @@ const navLinks = [
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="preload" href="/fonts/inter-400.woff2" as="font" type="font/woff2" crossorigin />
-    <link rel="preload" href="/fonts/inter-700.woff2" as="font" type="font/woff2" crossorigin />
     <title>{title} · Ultralisk</title>
     <meta name="description" content={description} />
     <meta property="og:title" content={`${title} · Ultralisk`} />
