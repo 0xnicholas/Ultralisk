@@ -14,7 +14,7 @@ export default defineConfig({
         {
           icon: 'github',
           label: 'GitHub',
-          href: 'https://github.com/PLACEHOLDER/Ultralisk',
+          href: 'https://github.com/0xnicholas/Ultralisk',
         },
       ],
       sidebar: [
@@ -54,7 +54,7 @@ export default defineConfig({
       ],
       customCss: ['./src/styles/custom.css'],
       editLink: {
-        baseUrl: 'https://github.com/PLACEHOLDER/Ultralisk/edit/main/docs-site/',
+        baseUrl: 'https://github.com/0xnicholas/Ultralisk/edit/main/docs-site/',
       },
       lastUpdated: true,
     }),

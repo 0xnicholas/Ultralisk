@@ -204,7 +204,7 @@ Header 从左到右完整结构:
 3. 解决方案 → `/solutions`
 4. 服务 → `/services`
 5. 文档 → `https://docs.ultralisk.dev`
-6. GitHub 图标链接 → `https://github.com/PLACEHOLDER/Ultralisk`
+6. GitHub 图标链接 → `https://github.com/0xnicholas/Ultralisk`
 7. 联系我们 / 预约演示 CTA 按钮 → `/contact`
 
 移动端菜单包含以上所有链接。
@@ -255,7 +255,7 @@ Expected: Build succeeds.
 - [ ] **Step 2: GitHub 链接占位处理**
 
 ```astro
-const GITHUB_URL = 'https://github.com/PLACEHOLDER/Ultralisk';
+const GITHUB_URL = 'https://github.com/0xnicholas/Ultralisk';
 ```
 
 并添加 TODO 注释说明后续替换。
@@ -878,7 +878,7 @@ export default defineConfig({
       title: 'Ultralisk',
       logo: { src: './src/assets/logo.svg' },
       social: {
-        github: 'https://github.com/PLACEHOLDER/Ultralisk',
+        github: 'https://github.com/0xnicholas/Ultralisk',
       },
       sidebar: [
         { label: 'Getting Started', items: [
