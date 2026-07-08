@@ -1,0 +1,36 @@
+---
+title: Ultralisk 文档
+description: Ultralisk 平台文档首页
+template: splash
+hero:
+  tagline: 面向自建 AI 数据中心的统一管控平台文档
+  actions:
+    - text: 快速开始
+      link: /getting-started/quickstart/
+      icon: right-arrow
+      variant: primary
+    - text: 了解架构
+      link: /architecture/overview/
+      icon: document
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+Ultralisk 帮助企业将开源大模型（vLLM / TGI / SGLang 等）封装为生产级 API 服务，并在统一控制台中管理集群、节点、模型服务与推理 API。
+
+## 从这里开始
+
+<CardGrid stagger>
+  <Card title="快速开始" icon="rocket">
+    在本地启动 Mock 后端，5 分钟跑通推理、鉴权、配额与内容安全全链路。
+  </Card>
+  <Card title="架构说明" icon="open-book">
+    了解 Ultralisk 的分层架构，以及已开源的 Ultralisk Core 能力边界。
+  </Card>
+  <Card title="私有化部署" icon="server">
+    在自有数据中心或私有云中部署 AI 基础设施的标准流程。
+  </Card>
+  <Card title="API 参考" icon="document">
+    查看 OpenAI 兼容的 Chat Completions API 接口说明。
+  </Card>
+</CardGrid>

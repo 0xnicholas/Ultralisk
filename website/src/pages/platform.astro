@@ -1,0 +1,144 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import CapabilityCard from '../components/CapabilityCard.astro';
+import PlatformDiagram from '../components/diagrams/PlatformDiagram.astro';
+import ArchitectureDiagram from '../components/diagrams/ArchitectureDiagram.astro';
+import { ArrowRight, Server, Network, Container, Workflow, Gauge, CreditCard, Github } from 'lucide-astro';
+---
+
+<Layout
+  title="平台能力 — Ultralisk"
+  description="从硬件到推理 API 的分层统一管控，涵盖集群编排、模型服务、可观测性、成本治理。"
+>
+  <Header />
+  <main id="main-content" class="flex-1">
+    <!-- Hero -->
+    <section class="border-b border-slate-200 bg-white">
+      <div class="mx-auto max-w-7xl px-6 py-20 sm:py-28">
+        <div class="mx-auto max-w-3xl text-center">
+          <h1 class="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+            Ultralisk 平台全景
+          </h1>
+          <p class="mt-6 text-lg text-slate-600">
+            从硬件到推理 API 的分层统一管控
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Platform diagram -->
+    <section class="mx-auto max-w-7xl px-6 py-20">
+      <div class="mb-10 text-center">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">统一控制台概念</h2>
+        <p class="mt-4 text-slate-600">一个集中视图，管全栈 AI 基础设施。</p>
+      </div>
+      <div class="mx-auto max-w-4xl">
+        <PlatformDiagram />
+      </div>
+    </section>
+
+    <!-- Six capabilities -->
+    <section class="bg-slate-50 py-20">
+      <div class="mx-auto max-w-7xl px-6">
+        <div class="mb-12 text-center">
+          <h2 class="text-3xl font-bold tracking-tight text-slate-900">六大能力模块</h2>
+          <p class="mt-4 text-slate-600">覆盖从基础设施到推理服务的完整链路。</p>
+        </div>
+        <div class="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+          <CapabilityCard
+            icon={Server}
+            title="硬件与网络纳管"
+            description="服务器、GPU、RDMA、存储统一接入，构建可观测的资源底座。"
+            points={['自动发现与 inventory', '状态监控与故障告警', '网络与存储拓扑可视化']}
+          />
+          <CapabilityCard
+            icon={Network}
+            title="集群编排"
+            description="K8s / Slurm 部署与生命周期管理，标准化交付训练与推理负载。"
+            points={['标准化集群交付', '弹性伸缩与资源调度', '训练与推理负载混部']}
+          />
+          <CapabilityCard
+            icon={Container}
+            title="模型生命周期"
+            description="模型仓库、版本、部署、灰度与回滚，实现模型服务化运营。"
+            points={['模型版本管理', '灰度发布与 A/B 测试', '多版本并行与回滚']}
+          />
+          <CapabilityCard
+            icon={Workflow}
+            title="推理服务网关"
+            description="Ultralisk Core 提供鉴权、限流、安全、监控与日志等接入层能力。"
+            points={['API Key 与 token 配额', '内容安全与规则引擎', 'Prometheus / OTel 可观测']}
+          />
+          <CapabilityCard
+            icon={Gauge}
+            title="统一可观测性"
+            description="指标、日志、追踪、告警一体化，快速定位性能与稳定性问题。"
+            points={['TTFT / TPOT / GPU 利用率', '结构化日志与 request_id', 'Grafana 仪表盘与告警']}
+          />
+          <CapabilityCard
+            icon={CreditCard}
+            title="成本与配额治理"
+            description="多租户配额、成本分摊与审计，让 AI 资源使用透明可控。"
+            points={['按项目/部门配额', '用量报告与成本分摊', '审计日志与合规报表']}
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- Ultralisk Core relationship -->
+    <section class="mx-auto max-w-7xl px-6 py-20">
+      <div class="grid items-center gap-12 lg:grid-cols-2">
+        <div>
+          <h2 class="text-3xl font-bold tracking-tight text-slate-900">Ultralisk Core 是平台的核心接入层</h2>
+          <p class="mt-4 text-slate-600">
+            当前已开源的 Ultralisk Core 实现了推理服务的安全暴露：鉴权与限流、可观测性、内容安全、日志与追踪。它是完整平台愿景中的推理接入层，上层控制台、编排与配额治理能力将持续演进。
+          </p>
+          <div class="mt-6">
+            <a
+              href="https://github.com/PLACEHOLDER/Ultralisk"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-slate-800"
+            >
+              <Github class="h-4 w-4" />
+              查看 GitHub 仓库
+            </a>
+          </div>
+        </div>
+        <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+          <ArchitectureDiagram variant="platform" />
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="bg-brand-900 py-20">
+      <div class="mx-auto max-w-4xl px-6 text-center">
+        <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          想了解平台如何落地到你的数据中心？
+        </h2>
+        <p class="mt-4 text-brand-100">我们的团队可以针对你的现状提供架构建议。</p>
+        <div class="mt-8 flex flex-wrap justify-center gap-4">
+          <a
+            href="/contact"
+            class="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-base font-semibold text-brand-700 transition-colors hover:bg-brand-50"
+          >
+            预约演示
+            <ArrowRight class="h-4 w-4" />
+          </a>
+          <a
+            href="https://docs.ultralisk.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rounded-xl border border-brand-400 bg-transparent px-6 py-3 text-base font-medium text-white transition-colors hover:bg-brand-800"
+          >
+            查看文档
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</Layout>

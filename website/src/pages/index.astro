@@ -1,0 +1,154 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import BeforeAfter from '../components/BeforeAfter.astro';
+import CapabilityCard from '../components/CapabilityCard.astro';
+import ArchitectureDiagram from '../components/diagrams/ArchitectureDiagram.astro';
+import { ArrowRight, LayoutDashboard, Rocket, ShieldCheck } from 'lucide-astro';
+---
+
+<Layout
+  title="Ultralisk — 把自建 AI 数据中心管起来"
+  description="面向自建 AI 数据中心的统一管控平台，私有化部署、统一控制台、快速部署、专业服务。"
+>
+  <Header />
+  <main id="main-content" class="flex-1">
+    <!-- Hero -->
+    <section class="relative overflow-hidden border-b border-slate-200 bg-white">
+      <div class="mx-auto max-w-7xl px-6 py-24 sm:py-32">
+        <div class="max-w-3xl">
+          <h1 class="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+            把自建 AI 数据中心管起来
+          </h1>
+          <p class="mt-6 text-lg text-slate-600 sm:text-xl">
+            统一控制台 · 快速部署 · 私有化可控 · 专业服务
+          </p>
+          <div class="mt-8 flex flex-wrap gap-4">
+            <a
+              href="/contact"
+              class="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-6 py-3 text-base font-medium text-white transition-colors hover:bg-brand-700"
+            >
+              预约演示
+              <ArrowRight class="h-4 w-4" />
+            </a>
+            <a
+              href="/platform"
+              class="rounded-xl border border-slate-200 bg-white px-6 py-3 text-base font-medium text-slate-700 transition-colors hover:border-slate-300 hover:text-slate-900"
+            >
+              了解平台
+            </a>
+          </div>
+        </div>
+
+        <!-- Trust badges -->
+        <div class="mt-12 flex flex-wrap items-center gap-4 text-sm font-medium text-slate-500">
+          <span class="inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-2">
+            <ShieldCheck class="h-4 w-4 text-brand-600" />
+            私有化部署
+          </span>
+          <span class="inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-2">
+            <ShieldCheck class="h-4 w-4 text-brand-600" />
+            数据不出境
+          </span>
+          <span class="inline-flex items-center gap-2 rounded-full bg-slate-50 px-4 py-2">
+            <ShieldCheck class="h-4 w-4 text-brand-600" />
+            审计就绪
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Before / After -->
+    <section class="mx-auto max-w-7xl px-6 py-20">
+      <div class="mb-10 text-center">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">从碎片化运维到统一管控</h2>
+        <p class="mt-4 text-slate-600">一个控制台，看清并管完整套 AI 基础设施。</p>
+      </div>
+      <BeforeAfter
+        title=""
+        before={[
+          '多工具跳来跳去，信息分散',
+          '故障靠人工排查，定位慢',
+          '扩容手动配置，响应滞后',
+          '资源利用率不可见，成本高',
+        ]}
+        after={[
+          '一个控制台统一纳管集群与节点',
+          '自动发现与告警，缩短排障时间',
+          '标准化交付与弹性调度',
+          '可视化运维与成本透明',
+        ]}
+      />
+    </section>
+
+    <!-- Three core capabilities -->
+    <section class="bg-slate-50 py-20">
+      <div class="mx-auto max-w-7xl px-6">
+        <div class="mb-12 text-center">
+          <h2 class="text-3xl font-bold tracking-tight text-slate-900">三大核心能力</h2>
+          <p class="mt-4 text-slate-600">为企业自建 AI 数据中心提供从接入到运营的关键支撑。</p>
+        </div>
+        <div class="grid gap-8 md:grid-cols-3">
+          <CapabilityCard
+            icon={LayoutDashboard}
+            title="统一控制台"
+            description="集群、节点、模型服务一站式管理，降低多工具切换成本。"
+            points={['多集群统一视图', '节点与 Workload 状态监控', '模型服务生命周期管理']}
+          />
+          <CapabilityCard
+            icon={Rocket}
+            title="快速部署"
+            description="已有环境一键接入，新集群标准化交付，缩短上线周期。"
+            points={['现有 K8s/Slurm 快速接入', '标准化集群交付模板', '模型服务灰度发布']}
+          />
+          <CapabilityCard
+            icon={ShieldCheck}
+            title="私有化可控"
+            description="数据不出境，权限、审计与合规内置，满足企业安全要求。"
+            points={['私有化部署', '多租户权限隔离', '审计日志与合规就绪']}
+          />
+        </div>
+      </div>
+    </section>
+
+    <!-- Architecture -->
+    <section class="mx-auto max-w-7xl px-6 py-20">
+      <div class="mb-10 text-center">
+        <h2 class="text-3xl font-bold tracking-tight text-slate-900">全栈架构概览</h2>
+        <p class="mt-4 text-slate-600">从裸金属 GPU 到推理 API 的分层统一管控。</p>
+      </div>
+      <div class="mx-auto max-w-3xl">
+        <ArchitectureDiagram variant="home" />
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="bg-brand-900 py-20">
+      <div class="mx-auto max-w-4xl px-6 text-center">
+        <h2 class="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          准备好统一管控你的 AI 数据中心了吗？
+        </h2>
+        <p class="mt-4 text-brand-100">预约一次演示，了解 Ultralisk 如何适配你的现有环境。</p>
+        <div class="mt-8 flex flex-wrap justify-center gap-4">
+          <a
+            href="/contact"
+            class="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-base font-semibold text-brand-700 transition-colors hover:bg-brand-50"
+          >
+            预约演示
+            <ArrowRight class="h-4 w-4" />
+          </a>
+          <a
+            href="https://docs.ultralisk.dev"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="rounded-xl border border-brand-400 bg-transparent px-6 py-3 text-base font-medium text-white transition-colors hover:bg-brand-800"
+          >
+            查看文档
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</Layout>

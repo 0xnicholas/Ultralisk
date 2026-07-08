@@ -1,0 +1,36 @@
+---
+export interface Props {
+  title: string;
+  pain: string;
+  solution: string;
+  benefit: string;
+}
+
+const { title, pain, solution, benefit } = Astro.props;
+---
+
+<div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition hover:shadow-md">
+  <h3 class="text-xl font-semibold text-slate-900">{title}</h3>
+
+  <div class="mt-5 space-y-4">
+    <div class="rounded-xl bg-slate-50 p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">Before</p>
+      <p class="mt-1 text-sm leading-relaxed text-slate-700">{pain}</p>
+    </div>
+
+    <div class="flex justify-center">
+      <span class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-brand-100 text-brand-600" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      </span>
+    </div>
+
+    <div class="rounded-xl bg-brand-50 p-4">
+      <p class="text-xs font-semibold uppercase tracking-wide text-brand-600">After</p>
+      <p class="mt-1 text-sm leading-relaxed text-slate-700">{solution}</p>
+    </div>
+  </div>
+
+  <div class="mt-5 border-t border-slate-100 pt-4">
+    <p class="text-sm font-medium text-brand-700">{benefit}</p>
+  </div>
+</div>

@@ -1,0 +1,91 @@
+---
+const navItems = ['集群', '节点', 'Workloads', '模型服务', '监控', '安全'];
+const resourceCards = [
+  { label: '集群', value: '3', status: '健康' },
+  { label: '节点', value: '24', status: '在线' },
+  { label: 'Workloads', value: '186', status: '运行中' },
+  { label: 'GPU 利用率', value: '72%', status: '正常' },
+];
+const alerts = [
+  { level: 'warning', text: 'cluster-b 节点温度偏高' },
+  { level: 'success', text: '模型 v2.1 灰度完成' },
+];
+---
+
+<svg
+  role="img"
+  aria-labelledby="platform-title platform-desc"
+  class="h-auto w-full"
+  viewBox="0 0 800 420"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <title id="platform-title">Ultralisk 统一控制台概念图</title>
+  <desc id="platform-desc">
+    抽象展示 Ultralisk 控制台界面：左侧为导航栏，主区域包含资源概览卡片、告警列表和吞吐量趋势图。
+  </desc>
+
+  <!-- Window chrome -->
+  <rect width="800" height="420" rx="16" class="fill-white stroke-slate-200" stroke-width="1.5" />
+
+  <!-- Title bar -->
+  <rect x="0" y="0" width="800" height="40" rx="16" class="fill-slate-50" />
+  <path d="M0 28h800" class="stroke-slate-100" stroke-width="1" />
+  <circle cx="24" cy="20" r="6" class="fill-slate-200" />
+  <circle cx="44" cy="20" r="6" class="fill-slate-200" />
+  <circle cx="64" cy="20" r="6" class="fill-slate-200" />
+  <text x="720" y="24" class="fill-slate-400 text-xs" text-anchor="end" style="font-family: Inter, system-ui, sans-serif;">Ultralisk Console</text>
+
+  <!-- Sidebar -->
+  <rect x="0" y="40" width="176" height="380" class="fill-slate-50" />
+  <text x="20" y="72" class="fill-slate-900 text-xs font-bold" style="font-family: Inter, system-ui, sans-serif;">导航</text>
+  {navItems.map((item, index) => (
+    <g transform={`translate(12, ${88 + index * 36})`}>
+      <rect x="0" y="0" width="152" height="28" rx="6" class={index === 0 ? 'fill-brand-100' : 'fill-transparent'} />
+      <text x="12" y="19" class={index === 0 ? 'fill-brand-700 text-xs font-medium' : 'fill-slate-600 text-xs font-medium'} style="font-family: Inter, system-ui, sans-serif;">{item}</text>
+    </g>
+  ))}
+
+  <!-- Main content header -->
+  <text x="204" y="80" class="fill-slate-900 text-base font-semibold" style="font-family: Inter, system-ui, sans-serif;">资源概览</text>
+
+  <!-- Resource cards -->
+  {resourceCards.map((card, index) => {
+    const x = 204 + (index % 4) * 146;
+    const y = 104;
+    return (
+      <g transform={`translate(${x}, ${y})`}>
+        <rect width="132" height="80" rx="10" class="fill-slate-50 stroke-slate-100" stroke-width="1" />
+        <text x="12" y="24" class="fill-slate-500 text-xs" style="font-family: Inter, system-ui, sans-serif;">{card.label}</text>
+        <text x="12" y="52" class="fill-slate-900 text-xl font-bold" style="font-family: Inter, system-ui, sans-serif;">{card.value}</text>
+        <rect x="12" y="60" width="44" height="16" rx="8" class={card.status === '正常' || card.status === '在线' || card.status === '运行中' ? 'fill-emerald-100' : 'fill-amber-100'} />
+        <text x="20" y="72" class={card.status === '正常' || card.status === '在线' || card.status === '运行中' ? 'fill-emerald-700 text-[10px]' : 'fill-amber-700 text-[10px]'} style="font-family: Inter, system-ui, sans-serif;">{card.status}</text>
+      </g>
+    );
+  })}
+
+  <!-- Alert list -->
+  <text x="204" y="220" class="fill-slate-900 text-sm font-semibold" style="font-family: Inter, system-ui, sans-serif;">最近告警</text>
+  <rect x="204" y="236" width="360" height="92" rx="10" class="fill-slate-50 stroke-slate-100" stroke-width="1" />
+  {alerts.map((alert, index) => (
+    <g transform={`translate(220, ${262 + index * 28})`}>
+      <circle cx="6" cy="6" r="5" class={alert.level === 'warning' ? 'fill-amber-400' : 'fill-emerald-500'} />
+      <text x="20" y="10" class="fill-slate-700 text-xs" style="font-family: Inter, system-ui, sans-serif;">{alert.text}</text>
+    </g>
+  ))}
+
+  <!-- Throughput chart -->
+  <text x="588" y="220" class="fill-slate-900 text-sm font-semibold" style="font-family: Inter, system-ui, sans-serif;">吞吐量趋势</text>
+  <rect x="588" y="236" width="192" height="148" rx="10" class="fill-slate-50 stroke-slate-100" stroke-width="1" />
+  <polyline
+    points="604,340 632,320 660,328 688,300 716,308 744,272 772,280"
+    class="stroke-brand-500"
+    fill="none"
+    stroke-width="2.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+  <circle cx="744" cy="272" r="4" class="fill-brand-600" />
+  <text x="604" y="368" class="fill-slate-400 text-[10px]" style="font-family: Inter, system-ui, sans-serif;">0:00</text>
+  <text x="720" y="368" class="fill-slate-400 text-[10px]" style="font-family: Inter, system-ui, sans-serif;">12:00</text>
+  <text x="752" y="368" class="fill-slate-400 text-[10px]" style="font-family: Inter, system-ui, sans-serif;">24:00</text>
+</svg>

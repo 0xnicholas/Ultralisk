@@ -1,0 +1,69 @@
+---
+import Layout from '../layouts/Layout.astro';
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import ContactForm from '../components/ContactForm.astro';
+---
+
+<Layout
+  title="联系我们 — Ultralisk"
+  description="预约 Ultralisk 演示，了解如何统一管控自建 AI 数据中心。"
+>
+  <Header />
+  <main id="main-content" class="flex-1">
+    <!-- Hero -->
+    <section class="border-b border-slate-200 bg-white">
+      <div class="mx-auto max-w-7xl px-6 py-20 sm:py-28">
+        <div class="mx-auto max-w-3xl text-center">
+          <h1 class="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">联系我们</h1>
+          <p class="mt-6 text-lg text-slate-600">
+            预约演示、咨询方案或反馈问题。我们将在 1-2 个工作日内与您联系。
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contact -->
+    <section class="mx-auto max-w-7xl px-6 py-20">
+      <div class="grid gap-12 lg:grid-cols-3">
+        <div class="lg:col-span-2">
+          <ContactForm />
+        </div>
+
+        <aside class="space-y-8">
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+            <h2 class="text-lg font-semibold text-slate-900">商务咨询</h2>
+            <p class="mt-2 text-sm text-slate-600">
+              留下你的需求，我们的解决方案专家会联系你，提供针对性的架构建议与报价。
+            </p>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+            <h2 class="text-lg font-semibold text-slate-900">技术支持</h2>
+            <p class="mt-2 text-sm text-slate-600">
+              如需技术问题反馈，也可通过 GitHub Issues 与我们联系。
+            </p>
+            <a
+              href="https://github.com/PLACEHOLDER/Ultralisk/issues"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="mt-4 inline-flex text-sm font-medium text-brand-600 hover:text-brand-700"
+            >
+              访问 GitHub Issues →
+            </a>
+          </div>
+
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+            <h2 class="text-lg font-semibold text-slate-900">企业联系信息</h2>
+            <ul class="mt-4 space-y-3 text-sm text-slate-600">
+              <li>邮箱：contact@ultralisk.dev（占位）</li>
+              <li>电话：+86 400-000-0000（占位）</li>
+              <li>地址：中国（占位）</li>
+            </ul>
+          </div>
+        </aside>
+      </div>
+    </section>
+  </main>
+  <Footer />
+</Layout>

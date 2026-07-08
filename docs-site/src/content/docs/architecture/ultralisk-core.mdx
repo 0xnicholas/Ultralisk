@@ -1,0 +1,56 @@
+---
+title: Ultralisk Core
+description: 已开源的 LLM API 基础设施接入层
+---
+
+Ultralisk Core 是 Ultralisk 平台的推理服务接入层，已作为开源组件交付。它提供生产级 API 服务所需的四大基础设施能力，并与具体推理引擎解耦。
+
+## 四大模块
+
+### 1. 鉴权与限流
+
+| 能力 | 位置 | 说明 |
+|---|---|---|
+| API Key 校验 | Kong 网关 | `key-auth` 插件，无效 Key 返回 401 |
+| QPS 限流 | Kong 网关 | `rate-limiting` 插件，Redis 计数，超限返回 429 |
+| Token 用量配额 | `app/quota/` | 日 Redis + 月 PostgreSQL 写穿 |
+| 分级配额 | `QuotaPolicy` | 不同调用方配置不同日/月额度 |
+
+### 2. 可观测性
+
+- Prometheus `/metrics` 端点
+- TTFT / TPOT / 吞吐量（来自 vLLM 原生指标）
+- GPU 利用率 / 显存占用
+- 请求成功率 / 错误率（按错误类型细分）
+- 并发请求数 / 排队长度
+
+告警规则位于 `monitoring/prometheus/alert.rules.yml`。
+
+### 3. 内容安全
+
+```
+app/safety/
+├── base.py          # InputGuard / OutputGuard / AsyncGuard 接口
+├── rules.py         # DFA 规则引擎
+├── streaming.py     # 流式句界缓冲-放行
+├── model_guard.py   # 通用审核模型 adapter
+└── pipeline.py      # SafetyPipeline
+```
+
+- **输入侧**：越狱检测 + 敏感词 + 超长/flooding → BLOCK
+- **输出侧·非流式**：敏感词 REDACT，审核模型 unsafe → BLOCK
+- **输出侧·流式**：句界缓冲，REDACT 后逐句放行
+
+### 4. 日志与追踪
+
+| 字段 | 用途 |
+|---|---|
+| `request_id` | 全链路业务主键 |
+| `trace_id` / `span_id` | OTel 追踪关联 |
+| `input_tokens` / `output_tokens` | 成本核算 |
+| `inference_ms` / `total_ms` | 瓶颈定位 |
+| `safety_input_action` / `safety_output_action` | 审核审计 |
+
+## 与平台的关系
+
+Ultralisk Core 是平台的核心接入层，上层平台能力（控制台、集群编排、模型治理）通过 Core 暴露的 API 对外提供服务。即使不采购上层平台，Core 也可独立部署，为已有推理引擎提供生产级 API 能力。
