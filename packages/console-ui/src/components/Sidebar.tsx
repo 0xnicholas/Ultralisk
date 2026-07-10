@@ -2,7 +2,7 @@ import { NavLink, Stack, Text, ThemeIcon } from '@mantine/core';
 import {
   IconLayoutDashboard, IconMessage, IconBox, IconKey,
   IconReceipt2, IconTerminal2, IconBoxMultiple,
-  IconServer, IconCpu, IconRocket, IconChartArea
+  IconServer, IconCpu, IconRocket, IconChartArea, IconReportMoney
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -24,6 +24,7 @@ const NAV_ITEMS = [
     { label: 'Nodes', icon: IconCpu, path: '/nodes' },
     { label: 'Deployments', icon: IconRocket, path: '/deployments' },
     { label: 'GPU Utilization', icon: IconChartArea, path: '/gpu-utilization' },
+    { label: 'Cost Analytics', icon: IconReportMoney, path: '/cost-analytics' },
   ]},
   { section: 'Organization', items: [
     { label: 'Billing', icon: IconReceipt2, path: '/billing' },

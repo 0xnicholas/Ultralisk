@@ -283,3 +283,34 @@ export interface GpuUtilizationData {
   per_model: GpuUtilizationPerModel[];
   per_tenant: GpuUtilizationPerTenant[];
 }
+
+// === Cost Analytics (Phase 2c) ===
+export interface CostAnalyticsDimension {
+  name: string; cost_usd: number; gpu_hours: number; tokens_m: number; pct: number;
+}
+
+export interface CostAnalyticsSummary {
+  total_cost_usd: number; token_cost_usd: number; gpu_hour_cost_usd: number;
+  budget_usd: number; budget_used_pct: number; estimated_month_end_usd: number;
+}
+
+export interface DailyCostPoint {
+  date: string; token_cost: number; gpu_cost: number;
+}
+
+export interface BudgetAlertThreshold {
+  label: string; type: string; value: number; triggered: boolean; triggered_at?: string;
+}
+
+export interface BudgetAlertsConfig {
+  budget_usd: number; current_spend: number; alerts_enabled: boolean;
+  channels: string[]; thresholds: BudgetAlertThreshold[];
+  suppression_window_minutes: number;
+}
+
+export interface CostAnalyticsData {
+  summary: CostAnalyticsSummary;
+  by_dimension: Record<string, CostAnalyticsDimension[]>;
+  daily_cost_trend: DailyCostPoint[];
+  budget_alerts: BudgetAlertsConfig;
+}
