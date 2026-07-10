@@ -98,3 +98,38 @@ export const MOCK_API_KEYS = [
   { id: 'key_001', name: 'Production', prefix: 'ultr_...a1b', role: 'admin' as const, model_allowlist: null, monthly_quota_usd: 50, usage_this_month_usd: 10.20, created_by: 'Alice Developer', created_at: '2026-07-01T00:00:00Z', last_used_at: '2026-07-10T14:30:00Z', revoked_at: null, status: 'active' as const },
   { id: 'key_002', name: 'Development', prefix: 'ultr_...c2d', role: 'developer' as const, model_allowlist: ['llama-3.1-8b-instruct'], monthly_quota_usd: 25, usage_this_month_usd: 2.27, created_by: 'Alice Developer', created_at: '2026-07-03T00:00:00Z', last_used_at: '2026-07-10T12:15:00Z', revoked_at: null, status: 'active' as const },
 ];
+
+export const MOCK_ENDPOINTS = [
+  {
+    id: 'ep_001', name: 'llama-prod', model_id: 'llama-3.3-70b-instruct', type: 'dedicated',
+    replicas: 2, gpu_spec: { type: 'H100', count: 2 },
+    autoscaling_policy: { min_replicas: 1, max_replicas: 4, target_cpu_util: 70 },
+    metrics: { qps: 45.2, ttft_p95_ms: 320, tpot_ms: 45, error_rate: 0.02, gpu_util: 68 },
+    status: 'active', created_at: '2026-07-05T00:00:00Z',
+  },
+  {
+    id: 'ep_002', name: 'deepseek-reserved', model_id: 'deepseek-v4-pro', type: 'reserved',
+    replicas: 1, gpu_spec: { type: 'H100', count: 1 },
+    autoscaling_policy: { min_replicas: 1, max_replicas: 2, target_cpu_util: 80 },
+    metrics: { qps: 12.1, ttft_p95_ms: 510, tpot_ms: 72, error_rate: 0.01, gpu_util: 55 },
+    status: 'active', created_at: '2026-07-08T00:00:00Z',
+  },
+  {
+    id: 'ep_003', name: 'qwen-dev', model_id: 'qwen-2.5-72b', type: 'reserved',
+    replicas: 1, gpu_spec: { type: 'H100', count: 1 }, autoscaling_policy: null,
+    metrics: { qps: 3.4, ttft_p95_ms: 890, tpot_ms: 120, error_rate: 0.05, gpu_util: 22 },
+    status: 'degraded', created_at: '2026-07-09T00:00:00Z',
+  },
+];
+
+export const MOCK_BATCH_JOBS = [
+  { id: 'batch_001', name: 'summarization-jul9', model_id: 'llama-3.3-70b-instruct', status: 'completed', input_file: 'summaries_input.jsonl', output_file: 'summaries_output.jsonl', callback_url: null, token_count: 1_250_000, cost: 0.74, created_at: '2026-07-09T10:00:00Z', completed_at: '2026-07-09T10:45:00Z', error_log: null },
+  { id: 'batch_002', name: 'classification-batch', model_id: 'llama-3.1-8b-instruct', status: 'running', input_file: 'classify_input.jsonl', output_file: null, callback_url: 'https://hooks.example.com/classify-done', token_count: 320_000, cost: null, created_at: '2026-07-10T14:00:00Z', completed_at: null, error_log: null },
+  { id: 'batch_003', name: 'embeddings-v2', model_id: 'qwen-2.5-72b', status: 'failed', input_file: 'embeddings_input.jsonl', output_file: null, callback_url: null, token_count: 50_000, cost: 0.03, created_at: '2026-07-08T09:00:00Z', completed_at: '2026-07-08T09:05:00Z', error_log: [{ line: 142, error: 'Invalid JSON format - unterminated string' }] },
+  { id: 'batch_004', name: 'bulk-translate', model_id: 'llama-3.1-8b-instruct', status: 'pending', input_file: 'translate_input.jsonl', output_file: null, callback_url: 'https://hooks.example.com/translate-done', token_count: null, cost: null, created_at: '2026-07-10T15:30:00Z', completed_at: null, error_log: null },
+];
+
+export const MOCK_SESSIONS = [
+  { id: 'sess_001', name: 'API Design Discussion', model_id: 'llama-3.3-70b-instruct', messages: [{ role: 'user', content: 'Design a REST API for a task queue' }, { role: 'assistant', content: 'Here is a REST API design for a task queue...' }], created_at: '2026-07-10T10:00:00Z', updated_at: '2026-07-10T10:30:00Z' },
+  { id: 'sess_002', name: 'Code Review', model_id: 'llama-3.1-8b-instruct', messages: [{ role: 'user', content: 'Review this TypeScript code...' }], created_at: '2026-07-10T11:00:00Z', updated_at: '2026-07-10T11:05:00Z' },
+];

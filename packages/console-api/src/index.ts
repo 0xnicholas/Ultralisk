@@ -3,6 +3,7 @@ import cors from 'cors';
 import {
   MOCK_USER, MOCK_JWT, MOCK_MODELS, MODEL_DETAILS,
   MOCK_USAGE, MOCK_BILLING, MOCK_API_KEYS,
+  MOCK_ENDPOINTS, MOCK_BATCH_JOBS, MOCK_SESSIONS,
 } from './fixtures.js';
 
 const app = express();
@@ -89,6 +90,89 @@ app.delete('/v1/admin/api-keys/:id', (_req, res) => {
   res.status(204).send();
 });
 
+// === Endpoints ===
+app.get('/v1/admin/endpoints', (_req, res) => {
+  res.json({ data: MOCK_ENDPOINTS, pagination: { page: 1, limit: 20, total: MOCK_ENDPOINTS.length } });
+});
+
+app.get('/v1/admin/endpoints/:id', (req, res) => {
+  const ep = MOCK_ENDPOINTS.find((e) => e.id === req.params.id);
+  if (!ep) return res.status(404).json({ error: { code: 'not_found', message: 'Endpoint not found' } });
+  res.json({ data: ep });
+});
+
+app.post('/v1/admin/endpoints', (req, res) => {
+  const body = req.body;
+  const ep = { id: `ep_${Date.now()}`, name: body.name, model_id: body.model_id, type: body.type, replicas: body.replicas ?? 1, gpu_spec: body.gpu_spec ?? { type: 'H100', count: 1 }, autoscaling_policy: body.autoscaling_policy ?? null, metrics: { qps: 0, ttft_p95_ms: 0, tpot_ms: 0, error_rate: 0, gpu_util: 0 }, status: 'creating', created_at: new Date().toISOString() };
+  MOCK_ENDPOINTS.push(ep);
+  res.status(201).json({ data: ep });
+});
+
+app.patch('/v1/admin/endpoints/:id', (req, res) => {
+  const idx = MOCK_ENDPOINTS.findIndex((e) => e.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: { code: 'not_found', message: 'Endpoint not found' } });
+  MOCK_ENDPOINTS[idx] = { ...MOCK_ENDPOINTS[idx], ...req.body };
+  res.json({ data: MOCK_ENDPOINTS[idx] });
+});
+
+app.delete('/v1/admin/endpoints/:id', (req, res) => {
+  const idx = MOCK_ENDPOINTS.findIndex((e) => e.id === req.params.id);
+  if (idx === -1) return res.status(404).send();
+  MOCK_ENDPOINTS.splice(idx, 1);
+  res.status(204).send();
+});
+
+// === Batch Jobs ===
+app.get('/v1/admin/batch-jobs', (_req, res) => {
+  res.json({ data: MOCK_BATCH_JOBS, pagination: { page: 1, limit: 20, total: MOCK_BATCH_JOBS.length } });
+});
+
+app.get('/v1/admin/batch-jobs/:id', (req, res) => {
+  const job = MOCK_BATCH_JOBS.find((j) => j.id === req.params.id);
+  if (!job) return res.status(404).json({ error: { code: 'not_found', message: 'Batch job not found' } });
+  res.json({ data: job });
+});
+
+app.post('/v1/admin/batch-jobs', (req, res) => {
+  const body = req.body;
+  const job = { id: `batch_${Date.now()}`, name: body.name, model_id: body.model_id, status: 'pending', input_file: body.input_file, output_file: null, callback_url: body.callback_url ?? null, token_count: null, cost: null, created_at: new Date().toISOString(), completed_at: null, error_log: null };
+  MOCK_BATCH_JOBS.unshift(job);
+  res.status(201).json({ data: job });
+});
+
+app.delete('/v1/admin/batch-jobs/:id', (req, res) => {
+  const idx = MOCK_BATCH_JOBS.findIndex((j) => j.id === req.params.id);
+  if (idx === -1) return res.status(404).send();
+  MOCK_BATCH_JOBS.splice(idx, 1);
+  res.status(204).send();
+});
+
+// === Sessions (Playground backend persistence) ===
+app.get('/v1/admin/sessions', (_req, res) => {
+  res.json({ data: MOCK_SESSIONS, pagination: { page: 1, limit: 20, total: MOCK_SESSIONS.length } });
+});
+
+app.post('/v1/admin/sessions', (req, res) => {
+  const body = req.body;
+  const session = { id: `sess_${Date.now()}`, name: body.name ?? 'New Chat', model_id: body.model_id ?? 'llama-3.1-8b-instruct', messages: body.messages ?? [], created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+  MOCK_SESSIONS.unshift(session);
+  res.status(201).json({ data: session });
+});
+
+app.patch('/v1/admin/sessions/:id', (req, res) => {
+  const idx = MOCK_SESSIONS.findIndex((s) => s.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: { code: 'not_found', message: 'Session not found' } });
+  MOCK_SESSIONS[idx] = { ...MOCK_SESSIONS[idx], ...req.body, updated_at: new Date().toISOString() };
+  res.json({ data: MOCK_SESSIONS[idx] });
+});
+
+app.delete('/v1/admin/sessions/:id', (req, res) => {
+  const idx = MOCK_SESSIONS.findIndex((s) => s.id === req.params.id);
+  if (idx === -1) return res.status(404).send();
+  MOCK_SESSIONS.splice(idx, 1);
+  res.status(204).send();
+});
+
 // === Chat completions (SSE stub) ===
 app.post('/v1/chat/completions', (req, res) => {
   const { stream } = req.body;
@@ -122,7 +206,7 @@ app.post('/v1/chat/completions', (req, res) => {
   }
 });
 
-const PORT = 3001;
+const PORT = 3100;
 app.listen(PORT, () => {
   console.log(`Ultralisk Console API stub running on http://localhost:${PORT}`);
 });
