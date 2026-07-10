@@ -11,8 +11,8 @@ export function ClustersPage() {
   const cards = [
     { label: 'Total Clusters', value: clusters?.length ?? '-', icon: IconServer, color: 'blue' },
     { label: 'Total GPUs', value: totalGpu.toLocaleString(), icon: IconCpu, color: 'violet' },
-    { label: 'Avg Utilization', value: `${avgUtil}%`, icon: IconActivity, color: avgUtil > 80 ? 'red' : 'green' as string },
-    { label: 'Degraded', value: degraded, icon: IconAlertTriangle, color: degraded > 0 ? 'yellow' : 'green' as string },
+    { label: 'Avg Utilization', value: `${avgUtil}%`, icon: IconActivity, color: avgUtil > 80 ? 'red' : 'green' },
+    { label: 'Degraded', value: degraded, icon: IconAlertTriangle, color: degraded > 0 ? 'yellow' : 'green' },
   ];
   return (
     <>

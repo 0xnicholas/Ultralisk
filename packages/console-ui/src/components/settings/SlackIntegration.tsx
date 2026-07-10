@@ -1,11 +1,12 @@
 import { Paper, Text, Group, Badge, Button, Stack, Switch, Divider, Code } from '@mantine/core';
 import { IconBrandSlack, IconPlugConnected, IconPlugOff } from '@tabler/icons-react';
-import { useSlackConfig, useConnectSlack, useDisconnectSlack } from '@/hooks/useAlerts';
+import { useSlackConfig, useConnectSlack, useDisconnectSlack, useUpdateSlackConfig } from '@/hooks/useAlerts';
 
 export function SlackIntegration() {
   const { data, isLoading } = useSlackConfig();
   const connectMutation = useConnectSlack();
   const disconnectMutation = useDisconnectSlack();
+  const updateSlack = useUpdateSlackConfig();
 
   if (isLoading || !data) return null;
 
@@ -27,16 +28,16 @@ export function SlackIntegration() {
 
           <Text size="xs" fw={600} mb="xs">Notifications</Text>
           <Stack gap={4} mb="md">
-            <Switch size="xs" label="Critical incidents" checked={data.notifications.critical} />
-            <Switch size="xs" label="Warning incidents" checked={data.notifications.warning} />
-            <Switch size="xs" label="AI analysis summary" checked={data.notifications.ai_summary} />
-            <Switch size="xs" label="Incident action confirmations" checked={data.notifications.incident_actions} />
+            <Switch size="xs" label="Critical incidents" checked={data.notifications.critical} onChange={() => updateSlack.mutate({ notifications: { ...data.notifications, critical: !data.notifications.critical } })} />
+            <Switch size="xs" label="Warning incidents" checked={data.notifications.warning} onChange={() => updateSlack.mutate({ notifications: { ...data.notifications, warning: !data.notifications.warning } })} />
+            <Switch size="xs" label="AI analysis summary" checked={data.notifications.ai_summary} onChange={() => updateSlack.mutate({ notifications: { ...data.notifications, ai_summary: !data.notifications.ai_summary } })} />
+            <Switch size="xs" label="Incident action confirmations" checked={data.notifications.incident_actions} onChange={() => updateSlack.mutate({ notifications: { ...data.notifications, incident_actions: !data.notifications.incident_actions } })} />
           </Stack>
 
           <Divider mb="md" />
           <Text size="xs" fw={600} mb="xs">Slash Commands</Text>
           <Stack gap={4} mb="md">
-            {data.slash_commands.map((cmd: any, i: number) => (
+            {data.slash_commands.map((cmd: { command: string; description: string }, i: number) => (
               <Group key={i} gap="xs"><Code>{cmd.command}</Code><Text size="xs" c="dimmed">{cmd.description}</Text></Group>
             ))}
           </Stack>

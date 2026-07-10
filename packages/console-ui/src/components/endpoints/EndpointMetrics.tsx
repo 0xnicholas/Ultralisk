@@ -6,7 +6,7 @@ export function EndpointMetrics({ endpoint }: { endpoint: Endpoint }) {
     { label: 'QPS', value: endpoint.metrics.qps.toFixed(1), color: 'blue' },
     { label: 'TTFT p95', value: `${endpoint.metrics.ttft_p95_ms}ms`, color: 'violet' },
     { label: 'TPOT', value: `${endpoint.metrics.tpot_ms}ms`, color: 'green' },
-    { label: 'Error Rate', value: `${endpoint.metrics.error_rate}%`, color: endpoint.metrics.error_rate > 1 ? 'red' : 'green' as string },
+    { label: 'Error Rate', value: `${endpoint.metrics.error_rate}%`, color: endpoint.metrics.error_rate > 1 ? 'red' : 'green' },
     { label: 'GPU Util', value: `${endpoint.metrics.gpu_util}%`, color: 'orange' },
   ];
   return (

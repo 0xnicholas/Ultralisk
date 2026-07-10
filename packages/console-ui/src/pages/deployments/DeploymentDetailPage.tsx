@@ -4,6 +4,7 @@ import { Title, Paper, Text, Group, Button, Skeleton, Badge, Table, NumberInput,
 import { IconArrowLeft, IconRefresh } from '@tabler/icons-react';
 import { useDeployment, useScaleDeployment, useRollbackDeployment } from '@/hooks/useDeployments';
 import { formatRelativeTime } from '@/utils/format';
+import type { DeploymentVersion } from '@/types';
 
 export function DeploymentDetailPage() {
   const { id } = useParams<{ id: string }>(); const navigate = useNavigate();
@@ -41,7 +42,7 @@ export function DeploymentDetailPage() {
           <Text size="sm" fw={500} mb="sm">Version History</Text>
           <Table striped highlightOnHover>
             <Table.Thead><Table.Tr><Table.Th>Version</Table.Th><Table.Th>Image</Table.Th><Table.Th>Deployed</Table.Th><Table.Th>Status</Table.Th></Table.Tr></Table.Thead>
-            <Table.Tbody>{dep.versions.map((v: any) => (
+            <Table.Tbody>{dep.versions.map((v: DeploymentVersion) => (
               <Table.Tr key={v.version}>
                 <Table.Td><Text fw={500}>v{v.version}</Text></Table.Td>
                 <Table.Td><Text size="xs" ff="mono">{v.image}</Text></Table.Td>

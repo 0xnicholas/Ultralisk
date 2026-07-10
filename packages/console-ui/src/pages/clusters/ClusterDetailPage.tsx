@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Title, Paper, Text, Group, Button, Skeleton, SimpleGrid, Progress, Table, Badge } from '@mantine/core';
 import { IconArrowLeft, IconCpu } from '@tabler/icons-react';
 import { useCluster } from '@/hooks/useClusters';
+import type { Node } from '@/types';
 
 export function ClusterDetailPage() {
   const { id } = useParams<{ id: string }>(); const navigate = useNavigate();
@@ -26,7 +27,7 @@ export function ClusterDetailPage() {
       <Paper withBorder p="lg" radius="md">
         <Table striped highlightOnHover>
           <Table.Thead><Table.Tr><Table.Th>Hostname</Table.Th><Table.Th>GPU</Table.Th><Table.Th>GPUs</Table.Th><Table.Th>Driver</Table.Th><Table.Th>CUDA</Table.Th><Table.Th>Status</Table.Th><Table.Th></Table.Th></Table.Tr></Table.Thead>
-          <Table.Tbody>{(cluster.nodes ?? []).map((node: any) => (
+          <Table.Tbody>{(cluster.nodes ?? []).map((node: Node) => (
             <Table.Tr key={node.id}>
               <Table.Td><Text size="sm" fw={500}>{node.hostname}</Text></Table.Td>
               <Table.Td><Badge variant="light" size="sm">{node.gpu_model}</Badge></Table.Td>

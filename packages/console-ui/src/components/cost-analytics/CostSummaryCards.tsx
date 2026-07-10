@@ -8,7 +8,7 @@ export function CostSummaryCards({ data }: { data: CostAnalyticsSummary }) {
     { label: 'Total Cost', value: formatCurrency(data.total_cost_usd), icon: IconCash, color: 'red' },
     { label: 'Token Cost', value: formatCurrency(data.token_cost_usd), icon: IconCoins, color: 'violet' },
     { label: 'GPU Hour Cost', value: formatCurrency(data.gpu_hour_cost_usd), icon: IconCpu, color: 'blue' },
-    { label: 'Budget Used', value: `${data.budget_used_pct}%`, sub: `of ${formatCurrency(data.budget_usd)}`, icon: IconChartPie, color: data.budget_used_pct > 80 ? 'red' : 'green' as string },
+    { label: 'Budget Used', value: `${data.budget_used_pct}%`, sub: `of ${formatCurrency(data.budget_usd)}`, icon: IconChartPie, color: data.budget_used_pct > 80 ? 'red' : 'green' },
   ];
   return (
     <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }} mb="md">

@@ -313,6 +313,11 @@ app.post('/v1/admin/settings/integrations/slack/disconnect', (_req, res) => {
   res.json({ data: MOCK_SLACK_CONFIG });
 });
 
+app.patch('/v1/admin/settings/integrations/slack', (req, res) => {
+  Object.assign(MOCK_SLACK_CONFIG, req.body);
+  res.json({ data: MOCK_SLACK_CONFIG });
+});
+
 // === Organization (Phase 2e) ===
 app.get('/v1/admin/organization', (_req, res) => res.json({ data: MOCK_ORGANIZATION }));
 app.patch('/v1/admin/organization', (req, res) => { Object.assign(MOCK_ORGANIZATION, req.body); res.json({ data: MOCK_ORGANIZATION }); });

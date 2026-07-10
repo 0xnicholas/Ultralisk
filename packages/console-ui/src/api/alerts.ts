@@ -7,3 +7,4 @@ export async function updateAutoRemediation(data: Partial<AutoRemediationConfig>
 export async function getSlackConfig() { return apiFetch<SingleResponse<SlackConfig>>('/v1/admin/settings/integrations/slack'); }
 export async function connectSlack() { return apiFetch<SingleResponse<SlackConfig>>('/v1/admin/settings/integrations/slack/connect', { method: 'POST' }); }
 export async function disconnectSlack() { return apiFetch<SingleResponse<SlackConfig>>('/v1/admin/settings/integrations/slack/disconnect', { method: 'POST' }); }
+export async function updateSlackConfig(data: Partial<SlackConfig>) { return apiFetch<SingleResponse<SlackConfig>>('/v1/admin/settings/integrations/slack', { method: 'PATCH', body: JSON.stringify(data) }); }
