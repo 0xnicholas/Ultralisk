@@ -140,9 +140,6 @@ export const MOCK_CLUSTERS = [
   { id: 'cl_003', name: 'eu-central-1-dev', region: 'eu-central-1', gpu_type: 'A100', node_count: 2, healthy_nodes: 2, status: 'healthy', avg_gpu_util: 34 },
 ];
 
-const NOW = Date.now();
-function ts(minAgo: number): string { return new Date(NOW - minAgo * 60000).toISOString(); }
-
 export const MOCK_NODES: Record<string, any[]> = {
   cl_001: [
     { id: 'node_001', cluster_id: 'cl_001', hostname: 'gpu-n01', gpu_model: 'H100', gpu_count: 8, driver_version: '560.35.03', cuda_version: '12.6', status: 'online' },
@@ -264,6 +261,209 @@ export const MOCK_COST_DATA = {
 };
 
 // === GPU Utilization (Phase 2b) ===
+// === Incidents / AI Diagnostics (Phase 2d) ===
+function ts(minAgo: number): string { return new Date(Date.now() - minAgo * 60000).toISOString(); }
+
+export const MOCK_INCIDENTS = [
+  {
+    id: 'inc_001', severity: 'critical', status: 'open', title: 'GPU Utilization Drop — gpu-n12',
+    description: 'GPU utilization dropped from 72% to 18% in 10 minutes',
+    detection_type: 'gpu_drop',
+    affected_entities: { cluster_id: 'cl_001', node_id: 'node_006', model_id: null, endpoint_id: 'ep_001' },
+    ai_analysis: {
+      model_used: 'llama-3.3-70b-instruct', completed_at: ts(5),
+      root_causes: [
+        { cause: 'OOM Kill (vLLM worker crashed)', confidence: 0.92, evidence: 'vllm-worker-3 exited with code 137 (SIGKILL) at 14:32:05. GPU memory peaked at 79.2/80 GB at 14:31:58.' },
+        { cause: 'GPU driver crash', confidence: 0.45, evidence: 'nvidia-smi reported "Unknown Error" at 14:32:10 — may be a side effect of OOM.' },
+        { cause: 'Thermal throttling', confidence: 0.12, evidence: 'GPU 2 temperature reached 87°C at 14:28 — but only 1 of 8 cards affected.' },
+      ],
+      recommendations: [
+        { action: 'Restart vllm-worker-3', risk: 'low', description: 'Node has no production traffic. Safe to restart immediately.' },
+        { action: 'Reduce --max-model-len from 8192 to 4096', risk: 'low', description: 'Long-term fix to reduce memory pressure.' },
+      ],
+    },
+    conversation_history: [
+      { timestamp: ts(4), role: 'user', content: 'What was the GPU memory trend before the crash?' },
+      { timestamp: ts(4), role: 'assistant', content: 'GPU memory on node gpu-n12 showed a monotonic increase from 62GB to 79GB over the 30 minutes before the crash, indicating a memory leak in the vLLM worker processing long-context requests.' },
+    ],
+    action_log: [
+      { timestamp: ts(10), user_id: 'system', action: 'Incident auto-created from Prometheus alert', result: '' },
+      { timestamp: ts(6), user_id: 'system', action: 'AI analysis completed', result: '3 root causes identified' },
+    ],
+    triggered_at: ts(10), mitigated_at: null, resolved_at: null, suppressed_at: null,
+  },
+  {
+    id: 'inc_002', severity: 'critical', status: 'investigating', title: 'Latency Spike — deepseek-reserved',
+    description: 'TTFT p95 exceeded baseline 3x for 5 minutes',
+    detection_type: 'latency_spike',
+    affected_entities: { cluster_id: 'cl_001', node_id: 'node_002', model_id: 'deepseek-v4-pro', endpoint_id: 'ep_002' },
+    ai_analysis: {
+      model_used: 'llama-3.3-70b-instruct', completed_at: ts(30),
+      root_causes: [
+        { cause: 'Request queue backlog', confidence: 0.78, evidence: 'Queue depth spiked from 12 to 147 in 2 minutes at 13:15. Concurrent requests exceeded max model parallelism.' },
+        { cause: 'Model warm-up after scale-up', confidence: 0.55, evidence: 'A new replica was added at 13:10 — model loading caused temporary throughput degradation.' },
+      ],
+      recommendations: [
+        { action: 'Scale up replicas from 2 to 3', risk: 'medium', description: 'Increases cost but provides immediate relief for queue backlog.' },
+        { action: 'Enable pre-warming for new replicas', risk: 'low', description: 'Pre-loads model weights before adding to LB pool.' },
+      ],
+    },
+    conversation_history: [],
+    action_log: [
+      { timestamp: ts(35), user_id: 'system', action: 'Incident auto-created from Prometheus alert', result: '' },
+      { timestamp: ts(32), user_id: 'alice@ultralisk.com', action: 'Status changed to investigating', result: '' },
+    ],
+    triggered_at: ts(35), mitigated_at: null, resolved_at: null, suppressed_at: null,
+  },
+  {
+    id: 'inc_003', severity: 'warning', status: 'mitigated', title: 'High GPU Temperature — gpu-w03',
+    description: 'GPU temperature >85°C for 10 minutes on node gpu-w03',
+    detection_type: 'thermal_throttle',
+    affected_entities: { cluster_id: 'cl_002', node_id: 'node_011', model_id: null, endpoint_id: null },
+    ai_analysis: {
+      model_used: 'llama-3.3-70b-instruct', completed_at: ts(120),
+      root_causes: [
+        { cause: 'Cooling system degradation', confidence: 0.83, evidence: 'Fan speed reported at 65% despite sustained 87°C temperature. Adjacent GPU 3 shows normal temp at 72°C, ruling out ambient temp issue.' },
+      ],
+      recommendations: [
+        { action: 'Drain node from load balancer', risk: 'low', description: 'Immediate action to prevent thermal damage.' },
+        { action: 'Schedule cooling maintenance', risk: 'low', description: 'Check fans and heatsink seating on affected node.' },
+      ],
+    },
+    conversation_history: [],
+    action_log: [
+      { timestamp: ts(180), user_id: 'system', action: 'Incident auto-created', result: '' },
+      { timestamp: ts(150), user_id: 'system', action: 'Tier 1 auto-remediation: drained from LB', result: 'Node removed from LB pool' },
+      { timestamp: ts(120), user_id: 'operator@ultralisk.com', action: 'Status changed to mitigated', result: 'Temperature dropped to 72°C after drain' },
+    ],
+    triggered_at: ts(180), mitigated_at: ts(110), resolved_at: null, suppressed_at: null,
+  },
+  {
+    id: 'inc_004', severity: 'critical', status: 'resolved', title: 'Node Offline — gpu-n08',
+    description: 'Node gpu-n08 heartbeat lost for >60s',
+    detection_type: 'node_offline',
+    affected_entities: { cluster_id: 'cl_001', node_id: 'node_008', model_id: null, endpoint_id: null },
+    ai_analysis: {
+      model_used: 'llama-3.3-70b-instruct', completed_at: ts(300),
+      root_causes: [
+        { cause: 'NIC failure', confidence: 0.91, evidence: 'Node powered on but unreachable via management network. BMC logs show NIC link down at time of incident.' },
+      ],
+      recommendations: [
+        { action: 'Replace NIC on gpu-n08', risk: 'medium', description: 'Requires node drain and maintenance window.' },
+      ],
+    },
+    conversation_history: [],
+    action_log: [
+      { timestamp: ts(360), user_id: 'system', action: 'Incident auto-created', result: '' },
+      { timestamp: ts(300), user_id: 'ops@ultralisk.com', action: 'NIC replacement completed', result: 'Node back online. Metrics recovered within 10 min.' },
+      { timestamp: ts(290), user_id: 'system', action: 'Incident auto-resolved', result: 'Metrics recovered for >10 minutes' },
+    ],
+    triggered_at: ts(360), mitigated_at: ts(300), resolved_at: ts(290), suppressed_at: null,
+  },
+  {
+    id: 'inc_005', severity: 'warning', status: 'suppressed', title: 'Memory Leak Trend — gpu-n06',
+    description: 'GPU memory usage monotonically increased >20% over 24h',
+    detection_type: 'memory_leak',
+    affected_entities: { cluster_id: 'cl_001', node_id: 'node_006', model_id: 'llama-3.3-70b-instruct', endpoint_id: null },
+    ai_analysis: {
+      model_used: 'llama-3.3-70b-instruct', completed_at: ts(1440),
+      root_causes: [
+        { cause: 'vLLM memory fragmentation', confidence: 0.67, evidence: 'KV cache fragmentation after processing many varied-length inputs. Memory grows monotonically but is recoverable via worker restart.' },
+      ],
+      recommendations: [
+        { action: 'Schedule vLLM worker restart during low traffic', risk: 'low', description: 'Planned restart clears fragmentation.' },
+        { action: 'Enable --enable-prefix-caching', risk: 'low', description: 'Reduces KV cache fragmentation for repeated prefixes.' },
+      ],
+    },
+    conversation_history: [],
+    action_log: [
+      { timestamp: ts(1500), user_id: 'system', action: 'Incident auto-created', result: '' },
+      { timestamp: ts(1480), user_id: 'ops@ultralisk.com', action: 'Marked as false positive — known pattern under investigation', result: 'Incident suppressed for 24h' },
+    ],
+    triggered_at: ts(1500), mitigated_at: null, resolved_at: null, suppressed_at: ts(1480),
+  },
+  {
+    id: 'inc_006', severity: 'critical', status: 'open', title: 'Error Rate Surge — llama-prod',
+    description: '5xx error rate >5% for 2 minutes on endpoint llama-prod',
+    detection_type: 'error_surge',
+    affected_entities: { cluster_id: 'cl_001', node_id: null, model_id: 'llama-3.3-70b-instruct', endpoint_id: 'ep_001' },
+    ai_analysis: {
+      model_used: 'deepseek-v4-pro', completed_at: ts(3),
+      root_causes: [
+        { cause: 'Upstream API dependency failure', confidence: 0.88, evidence: 'Error logs show HTTP 502 from embedding service. 5xx rate spiked from 0.1% to 8.2% in 1 minute.' },
+        { cause: 'Authentication token rotation', confidence: 0.35, evidence: 'A new API key was deployed at the same time — key might not have propagated to all workers.' },
+      ],
+      recommendations: [
+        { action: 'Verify embedding service health', risk: 'low', description: 'Check embedding service pod status and connectivity.' },
+        { action: 'Roll back API key if authentication related', risk: 'medium', description: 'Requires verifying token propagation before rollback.' },
+      ],
+    },
+    conversation_history: [],
+    action_log: [
+      { timestamp: ts(5), user_id: 'system', action: 'Incident auto-created from Prometheus alert', result: '' },
+    ],
+    triggered_at: ts(5), mitigated_at: null, resolved_at: null, suppressed_at: null,
+  },
+];
+
+export const MOCK_ALERTS = MOCK_INCIDENTS.map((inc) => ({
+  id: `alert_${inc.id.slice(4)}`, incident_id: inc.id, name: inc.title,
+  description: inc.description, severity: inc.severity,
+  source_metric: `prometheus:${inc.detection_type}`,
+  condition: { threshold: 40, duration: '10m', comparison: 'gt' },
+  status: inc.status === 'resolved' || inc.status === 'suppressed' ? 'resolved' : 'firing',
+  fired_at: inc.triggered_at, resolved_at: inc.resolved_at,
+  notification_channels: ['email', 'slack'],
+}));
+
+export const MOCK_AUTO_REMEDIATION = {
+  enabled: true,
+  tiers: {
+    tier1: {
+      enabled: true, operations: [
+        { id: 'restart_vllm', label: 'Restart crashed vLLM worker', enabled: true },
+        { id: 'clear_gpu_mem', label: 'Clear GPU memory (when no active requests)', enabled: true },
+        { id: 'drain_overheated', label: 'Drain overheated node from LB', enabled: true },
+      ],
+    },
+    tier2: {
+      enabled: true, approval_channels: ['web', 'slack', 'email'], operations: [
+        { id: 'scale_up', label: 'Scale up replicas', enabled: true },
+        { id: 'rollback_deploy', label: 'Roll back deployment', enabled: true },
+        { id: 'migrate_model', label: 'Migrate model to different node', enabled: false },
+      ],
+    },
+    tier3: {
+      enabled: true, operations: [
+        { id: 'node_reboot', label: 'Node reboot', enabled: true },
+        { id: 'cluster_config', label: 'Cluster config change', enabled: true },
+        { id: 'gpu_driver_update', label: 'GPU driver update', enabled: false },
+      ],
+    },
+  },
+  auto_suppression: { enabled: true, window_hours: 24 },
+};
+
+export const MOCK_SLACK_CONFIG: {
+  connected: boolean;
+  workspace_name: string | null;
+  channels: string[];
+  notifications: { critical: boolean; warning: boolean; ai_summary: boolean; incident_actions: boolean; };
+  slash_commands: { command: string; description: string; }[];
+} = {
+  connected: false,
+  workspace_name: null,
+  channels: [],
+  notifications: {
+    critical: true, warning: true,
+    ai_summary: true, incident_actions: true,
+  },
+  slash_commands: [
+    { command: '/ultralisk incident <id>', description: 'Query incident status and AI analysis' },
+    { command: '/ultralisk ask <question>', description: 'Ask AI assistant about recent incidents' },
+  ],
+};
+
 export const MOCK_GPU_UTILIZATION = {
   overview: { total_gpu: 64, avg_utilization: 62, idle_gpu: 14, queued_requests: 3 },
   time_series: __HOURS.map((timestamp: string, i: number) => ({

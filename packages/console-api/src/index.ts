@@ -7,6 +7,7 @@ import {
   MOCK_CLUSTERS, MOCK_NODES, MOCK_GPU_CARDS, MOCK_DEPLOYMENTS, MOCK_DEPLOYMENT_VERSIONS,
   MOCK_GPU_UTILIZATION,
   MOCK_COST_DATA,
+  MOCK_INCIDENTS, MOCK_ALERTS, MOCK_AUTO_REMEDIATION, MOCK_SLACK_CONFIG,
 } from './fixtures.js';
 
 const app = express();
@@ -246,6 +247,69 @@ app.get('/v1/admin/gpu-utilization', (_req, res) => {
 // === Cost Analytics (Phase 2c) ===
 app.get('/v1/admin/cost-analytics', (_req, res) => {
   res.json({ data: MOCK_COST_DATA });
+});
+
+// === Incidents / Alerts (Phase 2d) ===
+app.get('/v1/admin/incidents', (_req, res) => {
+  res.json({ data: MOCK_INCIDENTS, pagination: { page: 1, limit: 20, total: MOCK_INCIDENTS.length } });
+});
+
+app.get('/v1/admin/incidents/:id', (req, res) => {
+  const inc = MOCK_INCIDENTS.find((i: any) => i.id === req.params.id);
+  if (!inc) return res.status(404).json({ error: { code: 'not_found', message: 'Incident not found' } });
+  res.json({ data: inc });
+});
+
+app.patch('/v1/admin/incidents/:id', (req, res) => {
+  const idx = MOCK_INCIDENTS.findIndex((i: any) => i.id === req.params.id);
+  if (idx === -1) return res.status(404).json({ error: { code: 'not_found', message: 'Incident not found' } });
+  MOCK_INCIDENTS[idx] = { ...MOCK_INCIDENTS[idx], ...req.body };
+  res.json({ data: MOCK_INCIDENTS[idx] });
+});
+
+app.post('/v1/admin/incidents/:id/actions', (req, res) => {
+  const inc = MOCK_INCIDENTS.find((i: any) => i.id === req.params.id);
+  if (!inc) return res.status(404).json({ error: { code: 'not_found', message: 'Incident not found' } });
+  const action = { timestamp: new Date().toISOString(), user_id: req.body?.user_id ?? 'system', action: req.body?.action ?? '', result: req.body?.result ?? '' };
+  inc.action_log.push(action);
+  res.status(201).json({ data: action });
+});
+
+app.get('/v1/admin/alerts', (_req, res) => {
+  res.json({ data: MOCK_ALERTS, pagination: { page: 1, limit: 20, total: MOCK_ALERTS.length } });
+});
+
+app.post('/v1/admin/alerts/:id/suppress', (req, res) => {
+  const alert = MOCK_ALERTS.find((a: any) => a.id === req.params.id);
+  if (!alert) return res.status(404).json({ error: { code: 'not_found', message: 'Alert not found' } });
+  alert.status = 'suppressed';
+  res.json({ data: alert });
+});
+
+app.get('/v1/admin/settings/auto-remediation', (_req, res) => {
+  res.json({ data: MOCK_AUTO_REMEDIATION });
+});
+
+app.patch('/v1/admin/settings/auto-remediation', (req, res) => {
+  Object.assign(MOCK_AUTO_REMEDIATION, req.body);
+  res.json({ data: MOCK_AUTO_REMEDIATION });
+});
+
+app.get('/v1/admin/settings/integrations/slack', (_req, res) => {
+  res.json({ data: MOCK_SLACK_CONFIG });
+});
+
+app.post('/v1/admin/settings/integrations/slack/connect', (_req, res) => {
+  MOCK_SLACK_CONFIG.connected = true;
+  MOCK_SLACK_CONFIG.workspace_name = 'acme-ai.slack.com';
+  MOCK_SLACK_CONFIG.channels = ['#infra-alerts', '#ml-ops'];
+  res.json({ data: MOCK_SLACK_CONFIG });
+});
+
+app.post('/v1/admin/settings/integrations/slack/disconnect', (_req, res) => {
+  MOCK_SLACK_CONFIG.connected = false;
+  MOCK_SLACK_CONFIG.workspace_name = null;
+  res.json({ data: MOCK_SLACK_CONFIG });
 });
 
 // === Chat completions (SSE stub) ===

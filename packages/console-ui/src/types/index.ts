@@ -314,3 +314,44 @@ export interface CostAnalyticsData {
   daily_cost_trend: DailyCostPoint[];
   budget_alerts: BudgetAlertsConfig;
 }
+
+// === Incident (Phase 2d) ===
+export interface IncidentRootCause { cause: string; confidence: number; evidence: string; }
+export interface IncidentRecommendation { action: string; risk: 'low' | 'medium' | 'high'; description: string; }
+export interface IncidentActionLog { timestamp: string; user_id: string; action: string; result: string; }
+export interface IncidentConversation { timestamp: string; role: 'user' | 'assistant'; content: string; }
+export interface Incident {
+  id: string; severity: 'critical' | 'warning'; status: 'open' | 'investigating' | 'mitigated' | 'resolved' | 'suppressed';
+  title: string; description: string; detection_type: string;
+  affected_entities: { cluster_id?: string; node_id?: string; model_id?: string; endpoint_id?: string; };
+  ai_analysis: { model_used: string; completed_at: string; root_causes: IncidentRootCause[]; recommendations: IncidentRecommendation[]; };
+  conversation_history: IncidentConversation[];
+  action_log: IncidentActionLog[];
+  triggered_at: string; mitigated_at: string | null; resolved_at: string | null; suppressed_at: string | null;
+}
+
+// === Alert (Phase 2d) ===
+export interface Alert {
+  id: string; incident_id: string; name: string; description: string; severity: string;
+  source_metric: string; status: 'firing' | 'resolved' | 'suppressed';
+  fired_at: string; resolved_at: string | null; notification_channels: string[];
+}
+
+// === Auto-Remediation (Phase 2d) ===
+export interface RemediationOperation { id: string; label: string; enabled: boolean; }
+export interface AutoRemediationConfig {
+  enabled: boolean;
+  tiers: {
+    tier1: { enabled: boolean; operations: RemediationOperation[]; };
+    tier2: { enabled: boolean; approval_channels: string[]; operations: RemediationOperation[]; };
+    tier3: { enabled: boolean; operations: RemediationOperation[]; };
+  };
+  auto_suppression: { enabled: boolean; window_hours: number; };
+}
+
+// === Slack Config (Phase 2d) ===
+export interface SlackConfig {
+  connected: boolean; workspace_name: string | null; channels: string[];
+  notifications: { critical: boolean; warning: boolean; ai_summary: boolean; incident_actions: boolean; };
+  slash_commands: { command: string; description: string; }[];
+}

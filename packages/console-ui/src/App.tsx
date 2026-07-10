@@ -28,6 +28,10 @@ import { DeploymentsPage } from '@/pages/deployments/DeploymentsPage';
 import { DeploymentDetailPage } from '@/pages/deployments/DeploymentDetailPage';
 import { GpuUtilizationPage } from '@/pages/gpu-utilization/GpuUtilizationPage';
 import { CostAnalyticsPage } from '@/pages/cost-analytics/CostAnalyticsPage';
+import { IncidentsPage } from '@/pages/incidents/IncidentsPage';
+import { IncidentDetailPage } from '@/pages/incidents/IncidentDetailPage';
+import { OperationsSettingsPage } from '@/pages/settings/OperationsSettingsPage';
+import { IntegrationsPage } from '@/pages/settings/IntegrationsPage';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -82,6 +86,10 @@ export function App() {
               <Route path="/deployments/:id" element={<DeploymentDetailPage />} />
               <Route path="/gpu-utilization" element={<GpuUtilizationPage />} />
               <Route path="/cost-analytics" element={<CostAnalyticsPage />} />
+              <Route path="/incidents" element={<IncidentsPage />} />
+              <Route path="/incidents/:id" element={<IncidentDetailPage />} />
+              <Route path="/settings/operations" element={<OperationsSettingsPage />} />
+              <Route path="/settings/integrations" element={<IntegrationsPage />} />
               </Route>
             </Routes>
           </BrowserRouter>
