@@ -12,3 +12,5 @@ pgdata/
 
 # Worktrees (isolated workspaces per using-git-worktrees skill)
 .worktrees/
+
+screenshots/
