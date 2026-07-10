@@ -9,6 +9,9 @@ import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { ModelsPage } from '@/pages/models/ModelsPage';
 import { ModelDetailPage } from '@/pages/models/ModelDetailPage';
 import { PlaygroundPage } from '@/pages/playground/PlaygroundPage';
+import { ApiKeysPage } from '@/pages/api-keys/ApiKeysPage';
+import { BillingPage } from '@/pages/billing/BillingPage';
+import { ProfilePage } from '@/pages/settings/ProfilePage';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -43,6 +46,9 @@ export function App() {
               <Route path="/models/:modelId" element={<ModelDetailPage />} />
               <Route path="/playground" element={<PlaygroundPage />} />
               <Route path="/playground/:sessionId" element={<PlaygroundPage />} />
+              <Route path="/api-keys" element={<ApiKeysPage />} />
+              <Route path="/billing" element={<BillingPage />} />
+              <Route path="/settings/profile" element={<ProfilePage />} />
               </Route>
             </Routes>
           </BrowserRouter>
