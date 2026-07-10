@@ -1,6 +1,7 @@
-import { Paper, Text, Table, Badge } from '@mantine/core';
+import { Paper, Text, Table, Badge, ActionIcon, Tooltip } from '@mantine/core';
 import { useBilling } from '@/hooks/useBilling';
 import { formatCurrency } from '@/utils/format';
+import { IconDownload } from '@tabler/icons-react';
 
 export function InvoicesTable() {
   const { data: billing } = useBilling();
@@ -19,6 +20,7 @@ export function InvoicesTable() {
             <Table.Th>Amount</Table.Th>
             <Table.Th>Status</Table.Th>
             <Table.Th>Issued</Table.Th>
+            <Table.Th></Table.Th>
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
@@ -42,6 +44,13 @@ export function InvoicesTable() {
                 </Badge>
               </Table.Td>
               <Table.Td>{new Date(inv.issued_at).toLocaleDateString()}</Table.Td>
+              <Table.Td>
+                <Tooltip label="Download invoice">
+                  <ActionIcon variant="subtle" size="sm" component="a" href={inv.download_url} target="_blank">
+                    <IconDownload size={14} />
+                  </ActionIcon>
+                </Tooltip>
+              </Table.Td>
             </Table.Tr>
           ))}
         </Table.Tbody>

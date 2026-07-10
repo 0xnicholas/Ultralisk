@@ -54,7 +54,7 @@ export function DeveloperQuickstart() {
           onChange={setTab as (v: string) => void}
         />
       </Group>
-      <Paper withBorder p="sm" bg="var(--mantine-color-dark-8)" style={{ position: 'relative' }}>
+      <Paper withBorder p="sm" style={{ position: 'relative' }}>
         <CopyButton value={SNIPPETS[tab]} timeout={2000}>
           {({ copied, copy }) => (
             <ActionIcon
@@ -67,7 +67,7 @@ export function DeveloperQuickstart() {
             </ActionIcon>
           )}
         </CopyButton>
-        <Code block style={{ background: 'transparent' }}>
+        <Code block>
           {SNIPPETS[tab]}
         </Code>
       </Paper>

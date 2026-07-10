@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Container, Paper, Title, TextInput, PasswordInput, Button, Text, Stack, Alert } from '@mantine/core';
-import { IconAlertCircle } from '@tabler/icons-react';
+import { Container, Paper, Title, TextInput, PasswordInput, Button, Text, Stack, Alert, Divider } from '@mantine/core';
+import { IconAlertCircle, IconBug } from '@tabler/icons-react';
 import { useAuth } from '@/stores/AuthContext';
 
 export function LoginPage() {
@@ -56,6 +56,30 @@ export function LoginPage() {
             />
             <Button type="submit" fullWidth loading={loading}>
               Sign in
+            </Button>
+
+            <Divider label="Development" labelPosition="center" />
+
+            <Button
+              variant="outline"
+              color="gray"
+              fullWidth
+              loading={loading}
+              leftSection={<IconBug size={16} />}
+              onClick={async () => {
+                setError('');
+                setLoading(true);
+                try {
+                  await login('dev@ultralisk.com', 'dev-password');
+                  navigate('/dashboard', { replace: true });
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : 'Login failed');
+                } finally {
+                  setLoading(false);
+                }
+              }}
+            >
+              Dev Login (skip)
             </Button>
           </Stack>
         </form>
