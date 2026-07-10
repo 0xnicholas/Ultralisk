@@ -5,6 +5,7 @@ import {
   MOCK_USAGE, MOCK_BILLING, MOCK_API_KEYS,
   MOCK_ENDPOINTS, MOCK_BATCH_JOBS, MOCK_SESSIONS,
   MOCK_CLUSTERS, MOCK_NODES, MOCK_GPU_CARDS, MOCK_DEPLOYMENTS, MOCK_DEPLOYMENT_VERSIONS,
+  MOCK_GPU_UTILIZATION,
 } from './fixtures.js';
 
 const app = express();
@@ -234,6 +235,11 @@ app.post('/v1/admin/deployments/:id/rollback', (_req, res) => {
   const dep = MOCK_DEPLOYMENTS.find((d: any) => d.id === _req.params.id);
   if (!dep) return res.status(404).json({ error: { code: 'not_found', message: 'Deployment not found' } });
   res.json({ data: { ...dep, status: 'rolling_back' } });
+});
+
+// === GPU Utilization (Phase 2b) ===
+app.get('/v1/admin/gpu-utilization', (_req, res) => {
+  res.json({ data: MOCK_GPU_UTILIZATION });
 });
 
 // === Chat completions (SSE stub) ===
