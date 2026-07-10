@@ -4,6 +4,7 @@ import {
   MOCK_USER, MOCK_JWT, MOCK_MODELS, MODEL_DETAILS,
   MOCK_USAGE, MOCK_BILLING, MOCK_API_KEYS,
   MOCK_ENDPOINTS, MOCK_BATCH_JOBS, MOCK_SESSIONS,
+  MOCK_CLUSTERS, MOCK_NODES, MOCK_GPU_CARDS, MOCK_DEPLOYMENTS, MOCK_DEPLOYMENT_VERSIONS,
 } from './fixtures.js';
 
 const app = express();
@@ -171,6 +172,68 @@ app.delete('/v1/admin/sessions/:id', (req, res) => {
   if (idx === -1) return res.status(404).send();
   MOCK_SESSIONS.splice(idx, 1);
   res.status(204).send();
+});
+
+// === Clusters (Phase 2) ===
+app.get('/v1/admin/clusters', (_req, res) => {
+  res.json({ data: MOCK_CLUSTERS, pagination: { page: 1, limit: 20, total: MOCK_CLUSTERS.length } });
+});
+
+app.get('/v1/admin/clusters/:id', (req, res) => {
+  const cluster = MOCK_CLUSTERS.find((c: any) => c.id === req.params.id);
+  if (!cluster) return res.status(404).json({ error: { code: 'not_found', message: 'Cluster not found' } });
+  const nodes = MOCK_NODES[cluster.id] ?? [];
+  const totalGpu = nodes.reduce((s: number, n: any) => s + n.gpu_count, 0);
+  const utilizations = nodes.flatMap((n: any) => MOCK_GPU_CARDS[n.id] ?? []).map((g: any) => g.utilization_percent);
+  const avgUtil = utilizations.length > 0 ? Math.round(utilizations.reduce((a: number, b: number) => a + b, 0) / utilizations.length) : 0;
+  res.json({ data: { ...cluster, nodes, total_gpu: totalGpu, avg_gpu_util: avgUtil } });
+});
+
+// === Nodes (Phase 2) ===
+app.get('/v1/admin/nodes', (_req, res) => {
+  const allNodes = Object.values(MOCK_NODES).flat();
+  res.json({ data: allNodes, pagination: { page: 1, limit: 50, total: allNodes.length } });
+});
+
+app.get('/v1/admin/nodes/:id', (req, res) => {
+  const allNodes = Object.values(MOCK_NODES).flat();
+  const node = (allNodes as any[]).find((n: any) => n.id === req.params.id);
+  if (!node) return res.status(404).json({ error: { code: 'not_found', message: 'Node not found' } });
+  const gpuCards = MOCK_GPU_CARDS[node.id] ?? [];
+  res.json({ data: { ...node, gpu_cards: gpuCards } });
+});
+
+app.get('/v1/admin/clusters/:clusterId/nodes/:nodeId', (req, res) => {
+  const allNodes = Object.values(MOCK_NODES).flat();
+  const node = (allNodes as any[]).find((n: any) => n.id === req.params.nodeId && n.cluster_id === req.params.clusterId);
+  if (!node) return res.status(404).json({ error: { code: 'not_found', message: 'Node not found' } });
+  const gpuCards = MOCK_GPU_CARDS[node.id] ?? [];
+  res.json({ data: { ...node, gpu_cards: gpuCards } });
+});
+
+// === Deployments (Phase 2) ===
+app.get('/v1/admin/deployments', (_req, res) => {
+  res.json({ data: MOCK_DEPLOYMENTS, pagination: { page: 1, limit: 20, total: MOCK_DEPLOYMENTS.length } });
+});
+
+app.get('/v1/admin/deployments/:id', (req, res) => {
+  const dep = MOCK_DEPLOYMENTS.find((d: any) => d.id === req.params.id);
+  if (!dep) return res.status(404).json({ error: { code: 'not_found', message: 'Deployment not found' } });
+  const versions = MOCK_DEPLOYMENT_VERSIONS[dep.id] ?? [];
+  res.json({ data: { ...dep, versions } });
+});
+
+app.post('/v1/admin/deployments/:id/scale', (req, res) => {
+  const dep = MOCK_DEPLOYMENTS.find((d: any) => d.id === req.params.id);
+  if (!dep) return res.status(404).json({ error: { code: 'not_found', message: 'Deployment not found' } });
+  dep.replicas = req.body.replicas ?? dep.replicas;
+  res.json({ data: dep });
+});
+
+app.post('/v1/admin/deployments/:id/rollback', (_req, res) => {
+  const dep = MOCK_DEPLOYMENTS.find((d: any) => d.id === _req.params.id);
+  if (!dep) return res.status(404).json({ error: { code: 'not_found', message: 'Deployment not found' } });
+  res.json({ data: { ...dep, status: 'rolling_back' } });
 });
 
 // === Chat completions (SSE stub) ===

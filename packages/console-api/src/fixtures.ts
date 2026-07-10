@@ -133,3 +133,81 @@ export const MOCK_SESSIONS = [
   { id: 'sess_001', name: 'API Design Discussion', model_id: 'llama-3.3-70b-instruct', messages: [{ role: 'user', content: 'Design a REST API for a task queue' }, { role: 'assistant', content: 'Here is a REST API design for a task queue...' }], created_at: '2026-07-10T10:00:00Z', updated_at: '2026-07-10T10:30:00Z' },
   { id: 'sess_002', name: 'Code Review', model_id: 'llama-3.1-8b-instruct', messages: [{ role: 'user', content: 'Review this TypeScript code...' }], created_at: '2026-07-10T11:00:00Z', updated_at: '2026-07-10T11:05:00Z' },
 ];
+
+export const MOCK_CLUSTERS = [
+  { id: 'cl_001', name: 'us-east-1-prod', region: 'us-east-1', gpu_type: 'H100', node_count: 8, healthy_nodes: 8, status: 'healthy', avg_gpu_util: 67 },
+  { id: 'cl_002', name: 'us-west-2-prod', region: 'us-west-2', gpu_type: 'H100', node_count: 4, healthy_nodes: 3, status: 'degraded', avg_gpu_util: 82 },
+  { id: 'cl_003', name: 'eu-central-1-dev', region: 'eu-central-1', gpu_type: 'A100', node_count: 2, healthy_nodes: 2, status: 'healthy', avg_gpu_util: 34 },
+];
+
+const NOW = Date.now();
+function ts(minAgo: number): string { return new Date(NOW - minAgo * 60000).toISOString(); }
+
+export const MOCK_NODES: Record<string, any[]> = {
+  cl_001: [
+    { id: 'node_001', cluster_id: 'cl_001', hostname: 'gpu-n01', gpu_model: 'H100', gpu_count: 8, driver_version: '560.35.03', cuda_version: '12.6', status: 'online' },
+    { id: 'node_002', cluster_id: 'cl_001', hostname: 'gpu-n02', gpu_model: 'H100', gpu_count: 8, driver_version: '560.35.03', cuda_version: '12.6', status: 'online' },
+    { id: 'node_003', cluster_id: 'cl_001', hostname: 'gpu-n03', gpu_model: 'H100', gpu_count: 8, driver_version: '560.35.03', cuda_version: '12.6', status: 'online' },
+    { id: 'node_004', cluster_id: 'cl_001', hostname: 'gpu-n04', gpu_model: 'H100', gpu_count: 8, driver_version: '560.35.03', cuda_version: '12.6', status: 'online' },
+    { id: 'node_005', cluster_id: 'cl_001', hostname: 'gpu-n05', gpu_model: 'H100', gpu_count: 8, driver_version: '560.35.03', cuda_version: '12.6', status: 'online' },
+    { id: 'node_006', cluster_id: 'cl_001', hostname: 'gpu-n06', gpu_model: 'H100', gpu_count: 8, driver_version: '560.35.03', cuda_version: '12.6', status: 'degraded' },
+    { id: 'node_007', cluster_id: 'cl_001', hostname: 'gpu-n07', gpu_model: 'H100', gpu_count: 8, driver_version: '560.35.03', cuda_version: '12.6', status: 'online' },
+    { id: 'node_008', cluster_id: 'cl_001', hostname: 'gpu-n08', gpu_model: 'H100', gpu_count: 8, driver_version: '560.35.03', cuda_version: '12.6', status: 'offline' },
+  ],
+  cl_002: [
+    { id: 'node_009', cluster_id: 'cl_002', hostname: 'gpu-w01', gpu_model: 'H100', gpu_count: 8, driver_version: '560.35.03', cuda_version: '12.6', status: 'online' },
+    { id: 'node_010', cluster_id: 'cl_002', hostname: 'gpu-w02', gpu_model: 'H100', gpu_count: 8, driver_version: '560.35.03', cuda_version: '12.6', status: 'online' },
+    { id: 'node_011', cluster_id: 'cl_002', hostname: 'gpu-w03', gpu_model: 'H100', gpu_count: 8, driver_version: '560.35.03', cuda_version: '12.6', status: 'degraded' },
+    { id: 'node_012', cluster_id: 'cl_002', hostname: 'gpu-w04', gpu_model: 'H100', gpu_count: 8, driver_version: '560.35.03', cuda_version: '12.6', status: 'online' },
+  ],
+  cl_003: [
+    { id: 'node_013', cluster_id: 'cl_003', hostname: 'gpu-e01', gpu_model: 'A100', gpu_count: 4, driver_version: '550.54.15', cuda_version: '12.4', status: 'online' },
+    { id: 'node_014', cluster_id: 'cl_003', hostname: 'gpu-e02', gpu_model: 'A100', gpu_count: 4, driver_version: '550.54.15', cuda_version: '12.4', status: 'online' },
+  ],
+};
+
+function generateGpuCards(nodeId: string, count: number): any[] {
+  return Array.from({ length: count }, (_, i) => ({
+    id: nodeId + '-gpu' + i, node_id: nodeId, index: i,
+    utilization_percent: Math.floor(Math.random() * 30 + 50),
+    memory_used: Math.floor(Math.random() * 20 + 60), memory_total: 80,
+    temperature: Math.floor(Math.random() * 15 + 60),
+    processes: i % 2 === 0 ? [{ pid: 12345 + i, name: 'vllm', memory_mb: 10240 + i * 512 }] : [],
+    metrics: Array.from({ length: 30 }, (_, j) => ({
+      metric_name: 'gpu_util', timestamp: ts(j * 2), value: Math.floor(Math.random() * 40 + 40),
+    })),
+  }));
+}
+
+export const MOCK_GPU_CARDS: Record<string, any[]> = {};
+for (const [clusterId, nodes] of Object.entries(MOCK_NODES)) {
+  for (const node of nodes) {
+    MOCK_GPU_CARDS[node.id] = generateGpuCards(node.id, node.gpu_count);
+  }
+}
+
+export const MOCK_DEPLOYMENTS = [
+  { id: 'dep_001', name: 'llama-3.3-70b', model_id: 'llama-3.3-70b-instruct', endpoint_id: 'ep_001', cluster_id: 'cl_001', replicas: 2, gpu_per_replica: 1, status: 'active', created_at: ts(1440) },
+  { id: 'dep_002', name: 'deepseek-v4-pro', model_id: 'deepseek-v4-pro', endpoint_id: 'ep_002', cluster_id: 'cl_001', replicas: 1, gpu_per_replica: 1, status: 'active', created_at: ts(720) },
+  { id: 'dep_003', name: 'qwen-2.5-72b', model_id: 'qwen-2.5-72b', endpoint_id: null, cluster_id: 'cl_002', replicas: 1, gpu_per_replica: 2, status: 'degraded', created_at: ts(360) },
+  { id: 'dep_004', name: 'llama-3.1-8b', model_id: 'llama-3.1-8b-instruct', endpoint_id: null, cluster_id: 'cl_003', replicas: 2, gpu_per_replica: 1, status: 'active', created_at: ts(180) },
+];
+
+export const MOCK_DEPLOYMENT_VERSIONS: Record<string, any[]> = {
+  dep_001: [
+    { version: 3, deployed_at: ts(120), status: 'active', image: 'vllm:v0.8.3-llama33' },
+    { version: 2, deployed_at: ts(600), status: 'rolled_back', image: 'vllm:v0.8.2' },
+    { version: 1, deployed_at: ts(1440), status: 'rolled_back', image: 'vllm:v0.8.1' },
+  ],
+  dep_002: [
+    { version: 2, deployed_at: ts(360), status: 'active', image: 'vllm:v0.8.3-deepseek' },
+    { version: 1, deployed_at: ts(720), status: 'rolled_back', image: 'vllm:v0.8.2' },
+  ],
+  dep_003: [
+    { version: 1, deployed_at: ts(360), status: 'active', image: 'vllm:v0.8.2-qwen' },
+  ],
+  dep_004: [
+    { version: 2, deployed_at: ts(60), status: 'active', image: 'vllm:v0.8.3-llama8b' },
+    { version: 1, deployed_at: ts(180), status: 'rolled_back', image: 'vllm:v0.7.1' },
+  ],
+};
