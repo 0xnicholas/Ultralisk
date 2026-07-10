@@ -20,6 +20,12 @@ import { EndpointDetailPage } from '@/pages/endpoints/EndpointDetailPage';
 import { BatchJobsPage } from '@/pages/batch-jobs/BatchJobsPage';
 import { CreateBatchJobPage } from '@/pages/batch-jobs/CreateBatchJobPage';
 import { BatchJobDetailPage } from '@/pages/batch-jobs/BatchJobDetailPage';
+import { ClustersPage } from '@/pages/clusters/ClustersPage';
+import { ClusterDetailPage } from '@/pages/clusters/ClusterDetailPage';
+import { NodesPage } from '@/pages/nodes/NodesPage';
+import { NodeDetailPage } from '@/pages/nodes/NodeDetailPage';
+import { DeploymentsPage } from '@/pages/deployments/DeploymentsPage';
+import { DeploymentDetailPage } from '@/pages/deployments/DeploymentDetailPage';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -65,6 +71,13 @@ export function App() {
               <Route path="/batch-jobs/new" element={<CreateBatchJobPage />} />
               <Route path="/batch-jobs/:id" element={<BatchJobDetailPage />} />
               <Route path="/settings/profile" element={<ProfilePage />} />
+              <Route path="/clusters" element={<ClustersPage />} />
+              <Route path="/clusters/:id" element={<ClusterDetailPage />} />
+              <Route path="/clusters/:clusterId/nodes/:nodeId" element={<NodeDetailPage />} />
+              <Route path="/nodes" element={<NodesPage />} />
+              <Route path="/nodes/:id" element={<NodeDetailPage />} />
+              <Route path="/deployments" element={<DeploymentsPage />} />
+              <Route path="/deployments/:id" element={<DeploymentDetailPage />} />
               </Route>
             </Routes>
           </BrowserRouter>

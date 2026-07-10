@@ -1,7 +1,8 @@
 import { NavLink, Stack, Text, ThemeIcon } from '@mantine/core';
 import {
   IconLayoutDashboard, IconMessage, IconBox, IconKey,
-  IconReceipt2, IconTerminal2, IconBoxMultiple
+  IconReceipt2, IconTerminal2, IconBoxMultiple,
+  IconServer, IconCpu, IconRocket
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -17,6 +18,11 @@ const NAV_ITEMS = [
   { section: 'Inference', items: [
     { label: 'Endpoints', icon: IconTerminal2, path: '/endpoints' },
     { label: 'Batch Jobs', icon: IconBoxMultiple, path: '/batch-jobs' },
+  ]},
+  { section: 'Operations', items: [
+    { label: 'Clusters', icon: IconServer, path: '/clusters' },
+    { label: 'Nodes', icon: IconCpu, path: '/nodes' },
+    { label: 'Deployments', icon: IconRocket, path: '/deployments' },
   ]},
   { section: 'Organization', items: [
     { label: 'Billing', icon: IconReceipt2, path: '/billing' },

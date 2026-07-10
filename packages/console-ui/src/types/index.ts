@@ -211,3 +211,51 @@ export interface BackendSession {
   created_at: string;
   updated_at: string;
 }
+
+// === Cluster (Phase 2) ===
+export interface Cluster {
+  id: string; name: string; region: string; gpu_type: string;
+  node_count: number; healthy_nodes: number; status: 'healthy' | 'degraded';
+  avg_gpu_util: number;
+}
+
+export interface ClusterDetail extends Cluster {
+  nodes: Node[];
+  total_gpu: number;
+  avg_gpu_util: number;
+}
+
+// === Node (Phase 2) ===
+export interface Node {
+  id: string; cluster_id: string; hostname: string; gpu_model: string;
+  gpu_count: number; driver_version: string; cuda_version: string;
+  status: 'online' | 'degraded' | 'offline';
+}
+
+export interface NodeDetail extends Node {
+  gpu_cards: GpuCard[];
+}
+
+// === GpuCard (Phase 2) ===
+export interface GpuCard {
+  id: string; node_id: string; index: number;
+  utilization_percent: number; memory_used: number; memory_total: number;
+  temperature: number;
+  processes: { pid: number; name: string; memory_mb: number }[];
+  metrics: { metric_name: string; timestamp: string; value: number }[];
+}
+
+// === Deployment (Phase 2) ===
+export interface Deployment {
+  id: string; name: string; model_id: string; endpoint_id: string | null;
+  cluster_id: string; replicas: number; gpu_per_replica: number;
+  status: 'active' | 'degraded' | 'rolling_back'; created_at: string;
+}
+
+export interface DeploymentDetail extends Deployment {
+  versions: DeploymentVersion[];
+}
+
+export interface DeploymentVersion {
+  version: number; deployed_at: string; status: string; image: string;
+}
