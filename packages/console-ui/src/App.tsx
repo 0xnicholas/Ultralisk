@@ -26,6 +26,7 @@ import { NodesPage } from '@/pages/nodes/NodesPage';
 import { NodeDetailPage } from '@/pages/nodes/NodeDetailPage';
 import { DeploymentsPage } from '@/pages/deployments/DeploymentsPage';
 import { DeploymentDetailPage } from '@/pages/deployments/DeploymentDetailPage';
+import { GpuUtilizationPage } from '@/pages/gpu-utilization/GpuUtilizationPage';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -78,6 +79,7 @@ export function App() {
               <Route path="/nodes/:id" element={<NodeDetailPage />} />
               <Route path="/deployments" element={<DeploymentsPage />} />
               <Route path="/deployments/:id" element={<DeploymentDetailPage />} />
+              <Route path="/gpu-utilization" element={<GpuUtilizationPage />} />
               </Route>
             </Routes>
           </BrowserRouter>

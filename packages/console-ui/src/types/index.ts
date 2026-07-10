@@ -259,3 +259,27 @@ export interface DeploymentDetail extends Deployment {
 export interface DeploymentVersion {
   version: number; deployed_at: string; status: string; image: string;
 }
+
+// === GPU Utilization (Phase 2b) ===
+export interface GpuUtilizationOverview {
+  total_gpu: number; avg_utilization: number; idle_gpu: number; queued_requests: number;
+}
+
+export interface GpuUtilizationTimePoint {
+  timestamp: string; avg_utilization: number; idle_count: number; queued_count: number;
+}
+
+export interface GpuUtilizationPerModel {
+  model_id: string; model_display: string; gpu_allocated: number; gpu_utilization: number; requests_per_sec: number;
+}
+
+export interface GpuUtilizationPerTenant {
+  tenant: string; gpu_allocated: number; gpu_utilization: number; token_usage: number; cost_usd: number;
+}
+
+export interface GpuUtilizationData {
+  overview: GpuUtilizationOverview;
+  time_series: GpuUtilizationTimePoint[];
+  per_model: GpuUtilizationPerModel[];
+  per_tenant: GpuUtilizationPerTenant[];
+}
