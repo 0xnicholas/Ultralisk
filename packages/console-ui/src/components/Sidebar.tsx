@@ -1,4 +1,4 @@
-import { NavLink, Stack, Text, ThemeIcon } from '@mantine/core';
+import { NavLink, Stack, Text } from '@mantine/core';
 import {
   IconLayoutDashboard, IconMessage, IconBox, IconKey,
   IconReceipt2, IconTerminal2, IconBoxMultiple,
@@ -49,11 +49,7 @@ export function Sidebar() {
             <NavLink
               key={item.path}
               label={item.label}
-              leftSection={
-                <ThemeIcon variant="light" size="sm">
-                  <item.icon size={16} />
-                </ThemeIcon>
-              }
+              leftSection={<item.icon size={18} style={{ color: 'var(--mantine-color-dimmed)' }} />}
               active={location.pathname.startsWith(item.path)}
               onClick={() => navigate(item.path)}
               variant="light"
