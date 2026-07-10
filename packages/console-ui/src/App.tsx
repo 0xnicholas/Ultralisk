@@ -8,6 +8,7 @@ import { ConsoleLayout } from '@/layouts/ConsoleLayout';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { ModelsPage } from '@/pages/models/ModelsPage';
 import { ModelDetailPage } from '@/pages/models/ModelDetailPage';
+import { PlaygroundPage } from '@/pages/playground/PlaygroundPage';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -40,6 +41,8 @@ export function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/models" element={<ModelsPage />} />
               <Route path="/models/:modelId" element={<ModelDetailPage />} />
+              <Route path="/playground" element={<PlaygroundPage />} />
+              <Route path="/playground/:sessionId" element={<PlaygroundPage />} />
               </Route>
             </Routes>
           </BrowserRouter>
