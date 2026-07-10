@@ -6,6 +6,8 @@ import { AuthProvider, useAuth } from '@/stores/AuthContext';
 import { theme } from '@/theme';
 import { ConsoleLayout } from '@/layouts/ConsoleLayout';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
+import { ModelsPage } from '@/pages/models/ModelsPage';
+import { ModelDetailPage } from '@/pages/models/ModelDetailPage';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -36,6 +38,8 @@ export function App() {
               >
                 <Route index element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/models" element={<ModelsPage />} />
+              <Route path="/models/:modelId" element={<ModelDetailPage />} />
               </Route>
             </Routes>
           </BrowserRouter>
