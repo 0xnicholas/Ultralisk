@@ -33,12 +33,24 @@ import { IncidentDetailPage } from '@/pages/incidents/IncidentDetailPage';
 import { OperationsSettingsPage } from '@/pages/settings/OperationsSettingsPage';
 import { IntegrationsPage } from '@/pages/settings/IntegrationsPage';
 import { OrganizationPage } from '@/pages/settings/OrganizationPage';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import { showApiError } from '@/api/errorHandler';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 import '@mantine/charts/styles.css';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: 1,
+      staleTime: 10_000,
+    },
+    mutations: {
+      onError: (error) => showApiError(error),
+    },
+  },
+});
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user } = useAuth();
@@ -53,7 +65,8 @@ export function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <BrowserRouter>
-            <Routes>
+            <ErrorBoundary>
+              <Routes>
               <Route path="/login" element={<LoginPage />} />
               <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
               <Route
@@ -94,6 +107,7 @@ export function App() {
               <Route path="/settings/integrations" element={<IntegrationsPage />} />
               </Route>
             </Routes>
+            </ErrorBoundary>
           </BrowserRouter>
         </AuthProvider>
       </QueryClientProvider>
