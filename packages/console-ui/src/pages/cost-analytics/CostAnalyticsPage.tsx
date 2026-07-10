@@ -1,4 +1,4 @@
-import { Title, Skeleton } from '@mantine/core';
+import { Title, Skeleton, Text } from '@mantine/core';
 import { useCostAnalytics } from '@/hooks/useCostAnalytics';
 import { CostSummaryCards } from '@/components/cost-analytics/CostSummaryCards';
 import { CostAttributionTable } from '@/components/cost-analytics/CostAttributionTable';
@@ -8,7 +8,7 @@ import { BudgetAlertsConfig } from '@/components/cost-analytics/BudgetAlertsConf
 export function CostAnalyticsPage() {
   const { data, isLoading } = useCostAnalytics();
   if (isLoading) return <Skeleton height={500} />;
-  if (!data) return null;
+  if (!data) return <Text c="dimmed" ta="center" py="xl">No data available</Text>;
   return (
     <>
       <Title order={2} mb="md">Cost Analytics</Title>

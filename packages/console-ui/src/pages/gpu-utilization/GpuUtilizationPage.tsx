@@ -1,4 +1,4 @@
-import { Title, Skeleton } from '@mantine/core';
+import { Title, Skeleton, Text } from '@mantine/core';
 import { useGpuUtilization } from '@/hooks/useGpuUtilization';
 import { OverviewCards } from '@/components/gpu-utilization/OverviewCards';
 import { UtilizationChart } from '@/components/gpu-utilization/UtilizationChart';
@@ -8,7 +8,7 @@ import { PerTenantBreakdown } from '@/components/gpu-utilization/PerTenantBreakd
 export function GpuUtilizationPage() {
   const { data, isLoading } = useGpuUtilization();
   if (isLoading) return <Skeleton height={500} />;
-  if (!data) return null;
+  if (!data) return <Text c="dimmed" ta="center" py="xl">No data available</Text>;
   return (
     <>
       <Title order={2} mb="md">GPU Utilization</Title>
