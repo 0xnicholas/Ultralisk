@@ -1,0 +1,1 @@
+Implemented the Nodes page (Phase 2a Task 4) with all components, API layer, hooks, list view, detail view, GPU card grid, and time-series chart.

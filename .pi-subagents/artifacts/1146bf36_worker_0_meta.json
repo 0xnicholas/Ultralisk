@@ -1,0 +1,37 @@
+{
+  "runId": "1146bf36",
+  "agent": "worker",
+  "task": "Add ErrorBoundary + unified API error handling\n\nWork from: /Users/nicholasl/Documents/build-whatever/Ultralisk/packages/console-ui\n\n## Step 1: Create ErrorBoundary component\n\nCreate `packages/console-ui/src/components/ErrorBoundary.tsx`:\n```typescript\nimport { Component, type ReactNode, type ErrorInfo } from 'react';\nimport { Alert, Button, Center, Stack, Text, Title } from '@mantine/core';\nimport { IconAlertCircle } from '@tabler/icons-react';\n\ninterface Props { children: ReactNode; fallback?: ReactNode; }\ninterface State { hasError: boolean; error: Error | null; }\n\nexport class ErrorBoundary extends Component<Props, State> {\n  state: State = { hasError: false, error: null };\n\n  static getDerivedStateFromError(error: Error): State { return { hasError: true, error }; }\n  componentDidCatch(error: Error, info: ErrorInfo) { console.error('ErrorBoundary caught:', error, info); }\n\n  render() {\n    if (this.state.hasError) {\n      return this.props.fallback ?? (\n        <Center h={400}>\n          <Stack align=\"center\" gap=\"md\">\n            <IconAlertCircle size={48} color=\"var(--mantine-color-red-6)\" />\n            <Title order={3}>Something went wrong</Title>\n            <Text size=\"sm\" c=\"dimmed\" maw={400} ta=\"center\">{this.state.error?.message}</Text>\n            <Button variant=\"light\" onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}>\n              Reload Page\n            </Button>\n          </Stack>\n        </Center>\n      );\n    }\n    return this.props.children;\n  }\n}\n```\n\n## Step 2: Wrap App.tsx with ErrorBoundary\n\nRead `App.tsx`. Add import:\n```typescript\nimport { ErrorBoundary } from '@/components/ErrorBoundary';\n```\n\nWrap the top-level `<Routes>` inside `<ErrorBoundary>`:\n```typescript\n<ErrorBoundary>\n  <Routes>...</Routes>\n</ErrorBoundary>\n```\n\n## Step 3: Create API error toast utility\n\nCreate `packages/console-ui/src/api/errorHandler.ts`:\n```typescript\nimport { notifications } from '@mantine/notifications';\nimport { IconX } from '@tabler/icons-react';\n\nexport function showApiError(error: unknown, title = 'Request Failed') {\n  const message = error instanceof Error ? error.message : 'An unexpected error occurred';\n  notifications.show({ icon: <IconX size={16} />, color: 'red', title, message, autoClose: 5000 });\n}\n\nexport function handleQueryError(error: unknown): { error: Error } {\n  showApiError(error);\n  return { error: error instanceof Error ? error : new Error('Unknown error') };\n}\n```\n\n## Step 4: Add default error handling to QueryClient in App.tsx\n\nRead `App.tsx`. Modify the QueryClient creation:\n```typescript\nimport { showApiError } from '@/api/errorHandler';\n\nconst queryClient = new QueryClient({\n  defaultOptions: {\n    queries: {\n      retry: 1,\n      staleTime: 10_000,\n    },\n    mutations: {\n      onError: (error) => showApiError(error),\n    },\n  },\n});\n```\n\n## Step 5: Verify typecheck\n\n```bash\npnpm typecheck\n```\n\n## Step 6: Commit\n\n```bash\ncd /Users/nicholasl/Documents/build-whatever/Ultralisk && git add packages/console-ui/src && git commit -m \"feat: add ErrorBoundary and unified API error handling\"\n```",
+  "exitCode": 0,
+  "usage": {
+    "input": 6391,
+    "output": 3582,
+    "cacheRead": 105600,
+    "cacheWrite": 0,
+    "cost": 0.00219338,
+    "turns": 13
+  },
+  "model": "deepseek/deepseek-v4-flash:high",
+  "attemptedModels": [
+    "deepseek/deepseek-v4-flash:high"
+  ],
+  "modelAttempts": [
+    {
+      "model": "deepseek/deepseek-v4-flash:high",
+      "success": true,
+      "exitCode": 0,
+      "usage": {
+        "input": 6391,
+        "output": 3582,
+        "cacheRead": 105600,
+        "cacheWrite": 0,
+        "cost": 0.00219338,
+        "turns": 13
+      }
+    }
+  ],
+  "durationMs": 45768,
+  "toolCount": 16,
+  "transcriptPath": "/Users/nicholasl/Documents/build-whatever/Ultralisk/.pi-subagents/artifacts/1146bf36_worker_0_transcript.jsonl",
+  "timestamp": 1783687087704
+}

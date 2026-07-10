@@ -1,0 +1,1 @@
+All changes committed, no staged files leftover. Here is the structured acceptance report.

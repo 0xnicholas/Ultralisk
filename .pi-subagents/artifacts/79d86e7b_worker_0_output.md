@@ -1,0 +1,1 @@
+All clean. No staged files left. Here is the acceptance report:

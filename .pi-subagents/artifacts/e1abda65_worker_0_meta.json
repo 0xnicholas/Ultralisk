@@ -1,0 +1,37 @@
+{
+  "runId": "e1abda65",
+  "agent": "worker",
+  "task": "You are implementing Phase 2b Task 1: Stub API — GPU Utilization\n\nWork from: /Users/nicholasl/Documents/build-whatever/Ultralisk\n\nPhase 2a is done. EXTEND the API stub with GPU Utilization data.\n\n## Step 1: Append mock data to fixtures.ts\n\nRead `packages/console-api/src/fixtures.ts`. Append at the END:\n\n```typescript\n// === GPU Utilization (Phase 2b) ===\nconst __HOURS = Array.from({ length: 72 }, (_, i) => new Date(Date.now() - (71 - i) * 3600000).toISOString());\n\nexport const MOCK_GPU_UTILIZATION = {\n  overview: { total_gpu: 64, avg_utilization: 62, idle_gpu: 14, queued_requests: 3 },\n  time_series: __HOURS.map((timestamp: string, i: number) => ({\n    timestamp,\n    avg_utilization: Math.floor(Math.random() * 40 + 40),\n    idle_count: Math.floor(Math.random() * 6 + 2),\n    queued_count: Math.floor(Math.random() * 8),\n  })),\n  per_model: [\n    { model_id: 'llama-3.3-70b-instruct', model_display: 'Llama 3.3 70B', gpu_allocated: 24, gpu_utilization: 78, requests_per_sec: 45.2 },\n    { model_id: 'llama-3.1-8b-instruct', model_display: 'Llama 3.1 8B', gpu_allocated: 8, gpu_utilization: 92, requests_per_sec: 320.0 },\n    { model_id: 'deepseek-v4-pro', model_display: 'DeepSeek V4 Pro', gpu_allocated: 16, gpu_utilization: 55, requests_per_sec: 12.1 },\n    { model_id: 'qwen-2.5-72b', model_display: 'Qwen 2.5 72B', gpu_allocated: 8, gpu_utilization: 34, requests_per_sec: 3.4 },\n    { model_id: 'llama-3.2-vision-90b', model_display: 'Llama 3.2 Vision 90B', gpu_allocated: 8, gpu_utilization: 41, requests_per_sec: 1.8 },\n  ],\n  per_tenant: [\n    { tenant: 'platform-engineering', gpu_allocated: 32, gpu_utilization: 71, token_usage: 5_200_000, cost_usd: 420.50 },\n    { tenant: 'ml-research', gpu_allocated: 16, gpu_utilization: 58, token_usage: 2_800_000, cost_usd: 215.30 },\n    { tenant: 'data-science', gpu_allocated: 8, gpu_utilization: 43, token_usage: 890_000, cost_usd: 68.20 },\n    { tenant: 'internal-tools', gpu_allocated: 8, gpu_utilization: 29, token_usage: 340_000, cost_usd: 25.80 },\n  ],\n};\n```\n\n## Step 2: Add endpoint to index.ts\n\nRead `packages/console-api/src/index.ts`. Update the import to include MOCK_GPU_UTILIZATION:\n```typescript\nimport {\n  MOCK_USER, MOCK_JWT, MOCK_MODELS, MODEL_DETAILS, MOCK_USAGE, MOCK_BILLING,\n  MOCK_API_KEYS, MOCK_ENDPOINTS, MOCK_BATCH_JOBS, MOCK_SESSIONS,\n  MOCK_CLUSTERS, MOCK_NODES, MOCK_GPU_CARDS, MOCK_DEPLOYMENTS, MOCK_DEPLOYMENT_VERSIONS,\n  MOCK_GPU_UTILIZATION,\n} from './fixtures.js';\n```\n\nAdd handler BEFORE `// === Chat completions (SSE stub) ===`:\n```typescript\n// === GPU Utilization (Phase 2b) ===\napp.get('/v1/admin/gpu-utilization', (_req, res) => {\n  res.json({ data: MOCK_GPU_UTILIZATION });\n});\n```\n\n## Step 3: Verify and commit\n\n```bash\ncd packages/console-api && pnpm dev &\nsleep 2\ncurl -s http://localhost:3100/v1/admin/gpu-utilization | python3 -c \"import sys,json; d=json.load(sys.stdin)['data']; print('Time series:', len(d['time_series']), '| Models:', len(d['per_model']), '| Tenants:', len(d['per_tenant']))\"\nkill %1 2>/dev/null\ngit add packages/console-api/src\ngit commit -m \"feat(api): add GPU utilization mock data and endpoint\"\n```",
+  "exitCode": 0,
+  "usage": {
+    "input": 14848,
+    "output": 3293,
+    "cacheRead": 141056,
+    "cacheWrite": 0,
+    "cost": 0.0033957168,
+    "turns": 10
+  },
+  "model": "deepseek/deepseek-v4-flash:high",
+  "attemptedModels": [
+    "deepseek/deepseek-v4-flash:high"
+  ],
+  "modelAttempts": [
+    {
+      "model": "deepseek/deepseek-v4-flash:high",
+      "success": true,
+      "exitCode": 0,
+      "usage": {
+        "input": 14848,
+        "output": 3293,
+        "cacheRead": 141056,
+        "cacheWrite": 0,
+        "cost": 0.0033957168,
+        "turns": 10
+      }
+    }
+  ],
+  "durationMs": 44878,
+  "toolCount": 11,
+  "transcriptPath": "/Users/nicholasl/Documents/build-whatever/Ultralisk/.pi-subagents/artifacts/e1abda65_worker_0_transcript.jsonl",
+  "timestamp": 1783685147837
+}

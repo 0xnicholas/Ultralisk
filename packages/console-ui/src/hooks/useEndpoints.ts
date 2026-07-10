@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getEndpoints, getEndpoint, createEndpoint, updateEndpoint, deleteEndpoint } from '@/api/endpoints';
+import { getEndpoints, getEndpoint, createEndpoint, deleteEndpoint } from '@/api/endpoints';
 import type { CreateEndpointRequest } from '@/types';
 
 export function useEndpoints() { return useQuery({ queryKey: ['endpoints'], queryFn: () => getEndpoints().then((r) => r.data) }); }

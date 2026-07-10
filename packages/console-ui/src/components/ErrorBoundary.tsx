@@ -1,5 +1,5 @@
 import { Component, type ReactNode, type ErrorInfo } from 'react';
-import { Alert, Button, Center, Stack, Text, Title } from '@mantine/core';
+import { Button, Center, Stack, Text, Title } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 
 interface Props { children: ReactNode; fallback?: ReactNode; }

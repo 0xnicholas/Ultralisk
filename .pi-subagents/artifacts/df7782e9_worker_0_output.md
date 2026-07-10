@@ -1,0 +1,1 @@
+All files are modified/created and unstaged. Typecheck passes cleanly. Here's the structured report:

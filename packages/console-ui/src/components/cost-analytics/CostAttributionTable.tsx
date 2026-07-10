@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Paper, Text, Table, Group, Progress, SegmentedControl, Badge } from '@mantine/core';
+import { Paper, Text, Table, Group, Progress, SegmentedControl } from '@mantine/core';
 import { formatCurrency, formatNumber } from '@/utils/format';
 import type { CostAnalyticsDimension } from '@/types';
 

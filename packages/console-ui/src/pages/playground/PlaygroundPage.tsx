@@ -15,7 +15,7 @@ import { useModels } from '@/hooks/useModels';
 export function PlaygroundPage() {
   const [searchParams] = useSearchParams(); const urlModelId = searchParams.get('model');
   const { sessions, activeId, activeSession, setActiveId, createSession, addMessage, updateLastAssistant, renameSession, removeSession, changeModel } = usePlaygroundSession(urlModelId ?? 'llama-3.1-8b-instruct');
-  const { send, cancel, isStreaming, error, errorType, retryAfter } = usePlaygroundChat();
+  const { send, isStreaming, error, errorType, retryAfter } = usePlaygroundChat();
   const { data: models } = useModels();
   const [streamingContent, setStreamingContent] = useState('');
   const [systemPrompt, setSystemPrompt] = useState('');

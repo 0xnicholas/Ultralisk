@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { Title, Paper, Text, Group, Button, Skeleton, Badge, SimpleGrid, Stack } from '@mantine/core';
+import { Title, Paper, Text, Group, Button, Skeleton, Badge, SimpleGrid } from '@mantine/core';
 import { IconArrowLeft, IconCheck, IconX, IconSearch } from '@tabler/icons-react';
 import { useIncident, useUpdateIncident } from '@/hooks/useIncidents';
 import { IncidentTimeline } from '@/components/incidents/IncidentTimeline';

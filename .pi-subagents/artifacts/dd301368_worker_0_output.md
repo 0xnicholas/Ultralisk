@@ -1,0 +1,1 @@
+The sidebar already has `/api-keys` and `/billing` links. The `/settings/profile` route is accessible via URL (and likely from a user menu in TopBar). All files are created, typecheck passes, and commit is done.

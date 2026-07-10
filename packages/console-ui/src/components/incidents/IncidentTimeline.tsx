@@ -1,4 +1,4 @@
-import { Timeline, Text, Badge, Group } from '@mantine/core';
+import { Timeline, Text } from '@mantine/core';
 import { IconAlertCircle, IconSearch, IconCheck, IconX } from '@tabler/icons-react';
 import { formatRelativeTime } from '@/utils/format';
 import type { IncidentActionLog } from '@/types';

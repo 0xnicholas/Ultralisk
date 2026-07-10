@@ -25,7 +25,6 @@ export function AutoRemediationPolicy() {
       {(['tier1', 'tier2', 'tier3'] as const).map((tier) => {
         const t = data.tiers[tier] as any;
         const labels = { tier1: 'Tier 1 — Automatic', tier2: 'Tier 2 — Semi-automatic (require approval)', tier3: 'Tier 3 — Manual (recommendation only)' };
-        const colors = { tier1: 'green', tier2: 'yellow', tier3: 'orange' };
         return (
           <div key={tier}>
             <Group justify="space-between" mb={4}>
