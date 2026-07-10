@@ -32,6 +32,7 @@ import { IncidentsPage } from '@/pages/incidents/IncidentsPage';
 import { IncidentDetailPage } from '@/pages/incidents/IncidentDetailPage';
 import { OperationsSettingsPage } from '@/pages/settings/OperationsSettingsPage';
 import { IntegrationsPage } from '@/pages/settings/IntegrationsPage';
+import { OrganizationPage } from '@/pages/settings/OrganizationPage';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -88,6 +89,7 @@ export function App() {
               <Route path="/cost-analytics" element={<CostAnalyticsPage />} />
               <Route path="/incidents" element={<IncidentsPage />} />
               <Route path="/incidents/:id" element={<IncidentDetailPage />} />
+              <Route path="/settings/organization" element={<OrganizationPage />} />
               <Route path="/settings/operations" element={<OperationsSettingsPage />} />
               <Route path="/settings/integrations" element={<IntegrationsPage />} />
               </Route>

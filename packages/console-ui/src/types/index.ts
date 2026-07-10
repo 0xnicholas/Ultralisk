@@ -349,6 +349,11 @@ export interface AutoRemediationConfig {
   auto_suppression: { enabled: boolean; window_hours: number; };
 }
 
+// === Organization (Phase 2e) ===
+export interface OrgMember { id: string; email: string; name: string; role: string; joined_at: string; }
+export interface OrgProject { id: string; name: string; member_count: number; }
+export interface Organization { id: string; name: string; billing_email: string; plan: string; created_at: string; members: OrgMember[]; projects: OrgProject[]; }
+
 // === Slack Config (Phase 2d) ===
 export interface SlackConfig {
   connected: boolean; workspace_name: string | null; channels: string[];

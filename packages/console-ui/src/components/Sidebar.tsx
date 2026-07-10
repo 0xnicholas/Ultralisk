@@ -3,7 +3,7 @@ import {
   IconLayoutDashboard, IconMessage, IconBox, IconKey,
   IconReceipt2, IconTerminal2, IconBoxMultiple,
   IconServer, IconCpu, IconRocket, IconChartArea, IconReportMoney,
-  IconAlertTriangle, IconSettings, IconSlash
+  IconAlertTriangle, IconSettings, IconSlash, IconBuilding
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -30,6 +30,7 @@ const NAV_ITEMS = [
   ]},
   { section: 'Organization', items: [
     { label: 'Billing', icon: IconReceipt2, path: '/billing' },
+    { label: 'Organization', icon: IconBuilding, path: '/settings/organization' },
   ]},
 ];
 
