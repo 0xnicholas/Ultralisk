@@ -1,5 +1,5 @@
 import { useRef, useEffect } from 'react';
-import { ScrollArea, Text, Alert } from '@mantine/core';
+import { ScrollArea, Text, Alert, Paper, Textarea, Button, Group } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
 import { MessageBubble } from './MessageBubble';
 import type { ChatMessage } from '@/types';
@@ -8,9 +8,11 @@ interface Props {
   systemPrompt: string; messages: ChatMessage[]; isStreaming: boolean; streamingContent: string;
   error: string | null; errorType: string | null; retryAfter: number | null;
   onEditMessage: (index: number) => void; onRegenerate: () => void; onRetry: () => void;
+  editingIndex: number | null; editingContent: string;
+  onSaveEdit: () => void; onCancelEdit: () => void; onSetEditingContent: (content: string) => void;
 }
 
-export function ChatArea({ systemPrompt, messages, isStreaming, streamingContent, error, errorType, retryAfter, onEditMessage, onRegenerate, onRetry }: Props) {
+export function ChatArea({ systemPrompt, messages, isStreaming, streamingContent, error, errorType, retryAfter, onEditMessage, onRegenerate, onRetry, editingIndex, editingContent, onSaveEdit, onCancelEdit, onSetEditingContent }: Props) {
   const viewport = useRef<HTMLDivElement>(null);
   useEffect(() => { viewport.current?.scrollTo({ top: viewport.current.scrollHeight, behavior: 'smooth' }); }, [messages, streamingContent]);
 
@@ -18,7 +20,17 @@ export function ChatArea({ systemPrompt, messages, isStreaming, streamingContent
     <ScrollArea viewportRef={viewport} h="100%" offsetScrollbars>
       <div style={{ padding: 'var(--mantine-spacing-md)' }}>
         {systemPrompt && <MessageBubble role="system" content={systemPrompt} />}
-        {messages.map((msg, i) => (<MessageBubble key={i} role={msg.role} content={msg.content} onEdit={msg.role === 'user' ? () => onEditMessage(i) : undefined} onRegenerate={msg.role === 'assistant' ? () => onRegenerate() : undefined} />))}
+        {messages.map((msg, i) => editingIndex === i ? (
+          <Paper withBorder p="md" radius="md" mb="sm" key={i}>
+            <Textarea value={editingContent} onChange={(e) => onSetEditingContent(e.currentTarget.value)} minRows={3} autosize mb="xs" />
+            <Group justify="flex-end" gap="xs">
+              <Button size="xs" variant="default" onClick={onCancelEdit}>Cancel</Button>
+              <Button size="xs" onClick={onSaveEdit}>Save</Button>
+            </Group>
+          </Paper>
+        ) : (
+          <MessageBubble key={i} role={msg.role} content={msg.content} onEdit={msg.role === 'user' ? () => onEditMessage(i) : undefined} onRegenerate={msg.role === 'assistant' ? () => onRegenerate() : undefined} />
+        ))}
         {isStreaming && streamingContent && <MessageBubble role="assistant" content={streamingContent} />}
         {isStreaming && !streamingContent && <Text size="sm" c="dimmed" fs="italic">Generating...</Text>}
         {error && (
