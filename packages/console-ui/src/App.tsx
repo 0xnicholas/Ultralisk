@@ -5,6 +5,7 @@ import { Notifications } from '@mantine/notifications';
 import { AuthProvider, useAuth } from '@/stores/AuthContext';
 import { theme } from '@/theme';
 import { ConsoleLayout } from '@/layouts/ConsoleLayout';
+import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -34,6 +35,7 @@ export function App() {
                 }
               >
                 <Route index element={<Navigate to="/dashboard" replace />} />
+              <Route path="/dashboard" element={<DashboardPage />} />
               </Route>
             </Routes>
           </BrowserRouter>
