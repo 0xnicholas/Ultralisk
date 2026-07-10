@@ -8,6 +8,7 @@ import {
   MOCK_GPU_UTILIZATION,
   MOCK_COST_DATA,
   MOCK_INCIDENTS, MOCK_ALERTS, MOCK_AUTO_REMEDIATION, MOCK_SLACK_CONFIG,
+  MOCK_ORGANIZATION,
 } from './fixtures.js';
 
 const app = express();
@@ -311,6 +312,10 @@ app.post('/v1/admin/settings/integrations/slack/disconnect', (_req, res) => {
   MOCK_SLACK_CONFIG.workspace_name = null;
   res.json({ data: MOCK_SLACK_CONFIG });
 });
+
+// === Organization (Phase 2e) ===
+app.get('/v1/admin/organization', (_req, res) => res.json({ data: MOCK_ORGANIZATION }));
+app.patch('/v1/admin/organization', (req, res) => { Object.assign(MOCK_ORGANIZATION, req.body); res.json({ data: MOCK_ORGANIZATION }); });
 
 // === Chat completions (SSE stub) ===
 app.post('/v1/chat/completions', (req, res) => {

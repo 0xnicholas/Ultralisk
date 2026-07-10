@@ -486,3 +486,18 @@ export const MOCK_GPU_UTILIZATION = {
     { tenant: 'internal-tools', gpu_allocated: 8, gpu_utilization: 29, token_usage: 340_000, cost_usd: 25.80 },
   ],
 };
+
+export const MOCK_ORGANIZATION = {
+  id: 'org_001', name: 'Ultralisk Labs', billing_email: 'billing@ultralisk.com',
+  plan: 'pro', created_at: '2026-01-01T00:00:00Z',
+  members: [
+    { id: 'usr_001', email: 'alice@ultralisk.com', name: 'Alice Developer', role: 'admin', joined_at: '2026-01-01T00:00:00Z' },
+    { id: 'usr_002', email: 'bob@ultralisk.com', name: 'Bob Engineer', role: 'developer', joined_at: '2026-02-15T00:00:00Z' },
+    { id: 'usr_003', email: 'carol@ultralisk.com', name: 'Carol Viewer', role: 'readonly', joined_at: '2026-03-01T00:00:00Z' },
+  ],
+  projects: [
+    { id: 'proj_001', name: 'Production', member_count: 2 },
+    { id: 'proj_002', name: 'Development', member_count: 3 },
+    { id: 'proj_003', name: 'ML Research', member_count: 1 },
+  ],
+};
