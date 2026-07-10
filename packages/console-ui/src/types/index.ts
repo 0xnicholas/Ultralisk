@@ -155,3 +155,59 @@ export interface PaginatedResponse<T> {
 export interface SingleResponse<T> {
   data: T;
 }
+
+// === Endpoints ===
+export interface Endpoint {
+  id: string;
+  name: string;
+  model_id: string;
+  type: 'serverless' | 'reserved' | 'dedicated';
+  replicas: number;
+  gpu_spec: { type: string; count: number };
+  autoscaling_policy: { min_replicas: number; max_replicas: number; target_cpu_util: number } | null;
+  metrics: { qps: number; ttft_p95_ms: number; tpot_ms: number; error_rate: number; gpu_util: number };
+  status: 'active' | 'degraded' | 'creating' | 'deleted';
+  created_at: string;
+}
+
+export interface CreateEndpointRequest {
+  name: string;
+  model_id: string;
+  type: 'reserved' | 'dedicated';
+  replicas?: number;
+  gpu_spec?: { type: string; count: number };
+  autoscaling_policy?: { min_replicas: number; max_replicas: number; target_cpu_util: number };
+}
+
+// === Batch Jobs ===
+export interface BatchJob {
+  id: string;
+  name: string;
+  model_id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed';
+  input_file: string;
+  output_file: string | null;
+  callback_url: string | null;
+  token_count: number | null;
+  cost: number | null;
+  created_at: string;
+  completed_at: string | null;
+  error_log: { line: number; error: string }[] | null;
+}
+
+export interface CreateBatchJobRequest {
+  name: string;
+  model_id: string;
+  input_file: string;
+  callback_url?: string;
+}
+
+// === Backend Session (Phase 1b) ===
+export interface BackendSession {
+  id: string;
+  name: string;
+  model_id: string;
+  messages: { role: 'user' | 'assistant' | 'system'; content: string }[];
+  created_at: string;
+  updated_at: string;
+}

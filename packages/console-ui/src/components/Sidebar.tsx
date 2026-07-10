@@ -1,7 +1,7 @@
 import { NavLink, Stack, Text, ThemeIcon } from '@mantine/core';
 import {
   IconLayoutDashboard, IconMessage, IconBox, IconKey,
-  IconReceipt2
+  IconReceipt2, IconTerminal2, IconBoxMultiple
 } from '@tabler/icons-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 
@@ -13,6 +13,10 @@ const NAV_ITEMS = [
     { label: 'Playground', icon: IconMessage, path: '/playground' },
     { label: 'Models', icon: IconBox, path: '/models' },
     { label: 'API Keys', icon: IconKey, path: '/api-keys' },
+  ]},
+  { section: 'Inference', items: [
+    { label: 'Endpoints', icon: IconTerminal2, path: '/endpoints' },
+    { label: 'Batch Jobs', icon: IconBoxMultiple, path: '/batch-jobs' },
   ]},
   { section: 'Organization', items: [
     { label: 'Billing', icon: IconReceipt2, path: '/billing' },

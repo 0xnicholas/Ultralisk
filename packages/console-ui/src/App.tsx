@@ -5,6 +5,8 @@ import { Notifications } from '@mantine/notifications';
 import { AuthProvider, useAuth } from '@/stores/AuthContext';
 import { theme } from '@/theme';
 import { ConsoleLayout } from '@/layouts/ConsoleLayout';
+import { LoginPage } from '@/pages/auth/LoginPage';
+import { AcceptInvitationPage } from '@/pages/auth/AcceptInvitationPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { ModelsPage } from '@/pages/models/ModelsPage';
 import { ModelDetailPage } from '@/pages/models/ModelDetailPage';
@@ -12,6 +14,12 @@ import { PlaygroundPage } from '@/pages/playground/PlaygroundPage';
 import { ApiKeysPage } from '@/pages/api-keys/ApiKeysPage';
 import { BillingPage } from '@/pages/billing/BillingPage';
 import { ProfilePage } from '@/pages/settings/ProfilePage';
+import { EndpointsPage } from '@/pages/endpoints/EndpointsPage';
+import { CreateEndpointPage } from '@/pages/endpoints/CreateEndpointPage';
+import { EndpointDetailPage } from '@/pages/endpoints/EndpointDetailPage';
+import { BatchJobsPage } from '@/pages/batch-jobs/BatchJobsPage';
+import { CreateBatchJobPage } from '@/pages/batch-jobs/CreateBatchJobPage';
+import { BatchJobDetailPage } from '@/pages/batch-jobs/BatchJobDetailPage';
 
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
@@ -33,6 +41,8 @@ export function App() {
         <AuthProvider>
           <BrowserRouter>
             <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/accept-invitation" element={<AcceptInvitationPage />} />
               <Route
                 element={
                   <AuthGuard>
@@ -48,6 +58,12 @@ export function App() {
               <Route path="/playground/:sessionId" element={<PlaygroundPage />} />
               <Route path="/api-keys" element={<ApiKeysPage />} />
               <Route path="/billing" element={<BillingPage />} />
+              <Route path="/endpoints" element={<EndpointsPage />} />
+              <Route path="/endpoints/new" element={<CreateEndpointPage />} />
+              <Route path="/endpoints/:id" element={<EndpointDetailPage />} />
+              <Route path="/batch-jobs" element={<BatchJobsPage />} />
+              <Route path="/batch-jobs/new" element={<CreateBatchJobPage />} />
+              <Route path="/batch-jobs/:id" element={<BatchJobDetailPage />} />
               <Route path="/settings/profile" element={<ProfilePage />} />
               </Route>
             </Routes>
