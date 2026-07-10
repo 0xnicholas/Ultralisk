@@ -6,6 +6,7 @@ import {
   MOCK_ENDPOINTS, MOCK_BATCH_JOBS, MOCK_SESSIONS,
   MOCK_CLUSTERS, MOCK_NODES, MOCK_GPU_CARDS, MOCK_DEPLOYMENTS, MOCK_DEPLOYMENT_VERSIONS,
   MOCK_GPU_UTILIZATION,
+  MOCK_COST_DATA,
 } from './fixtures.js';
 
 const app = express();
@@ -240,6 +241,11 @@ app.post('/v1/admin/deployments/:id/rollback', (_req, res) => {
 // === GPU Utilization (Phase 2b) ===
 app.get('/v1/admin/gpu-utilization', (_req, res) => {
   res.json({ data: MOCK_GPU_UTILIZATION });
+});
+
+// === Cost Analytics (Phase 2c) ===
+app.get('/v1/admin/cost-analytics', (_req, res) => {
+  res.json({ data: MOCK_COST_DATA });
 });
 
 // === Chat completions (SSE stub) ===
