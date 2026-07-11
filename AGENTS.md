@@ -81,7 +81,7 @@ docs/                        ← Architecture documentation (root level)
 | Console UI | **React 19 + TypeScript + Mantine v9** | Vite dev server proxies to :3100 |
 | Inference | **vLLM** (Phase 1) → **Zealot** (Rust+CUDA, Phase 2+) | Fork vLLM, replace attention kernel + scheduler |
 | Container | **Kubernetes + KAI Scheduler** | GPU-aware Pod scheduling |
-| DB | **PostgreSQL + Redis + ClickHouse + Loki** | Domain-driven: Control/Cache/Telemetry/Artifact |
+| DB | **PostgreSQL + Redis + ClickHouse + Loki + S3** | Domain-driven: Control/Cache/Telemetry/Artifact. Model weights/LoRA go to S3, not Postgres. |
 | Build | **pnpm + Turborepo** | Workspace root: `console/` |
 
 ---
@@ -139,7 +139,7 @@ Every ADR must reference `ADR-000 (Platform Object Model)` in its dependencies.
 ## Current State (Phase 1a Mock)
 
 - **Console API**: All endpoints return mock data from `fixtures.ts`. No real auth, no real DB.
-- **Console UI**: Full Phase 1a + 2 UI pages exist. Connected to mock API via Vite proxy.
+- **Console UI**: Phase 1a and 1b pages exist (Dashboard, Models, Playground, API Keys, Endpoints, Batch Jobs, Billing). Connected to mock API via Vite proxy.
 - **Gateway**: Not implemented. Vite dev proxy stands in (`/v1/admin` → `:3100`, `/v1/chat` → `:3100`).
 - **Engine**: Not deployed. Mock chat completions endpoint returns SSE stub text.
 
