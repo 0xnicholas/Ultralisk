@@ -66,7 +66,7 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 | GPU 利用率 | > 30% |
 
 ### 里程碑
-- **M1.1（第 1 月末）**：Backend API + Playground 可用，内部 dogfood。
+- **M1.1（第 1 月末）**：Backend API + Playground 可用，内部 dogfood。**启动 GPU/CUDA 工程师招聘**。
 - **M1.2（第 2 月末）**：Console 完整页面上线，邀请 TokenCamp 作为种子用户。
 - **M1.3（第 3 月末）**：计费系统跑通，开始对外 Invitation-only 试用。
 
@@ -89,7 +89,7 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 | **成本归因** | 按模型 / endpoint / API key / 团队 / 项目拆分 | P1 |
 | **预算告警** | 月度预算阈值，邮件/Slack 通知 | P1 |
 | **推理引擎 vLLM fork** | Fork vLLM，启动 CUDA kernel 优化（attention kernel、自定义量化） | P1 |
-| **GPU 工程团队** | 招聘 2-3 名 GPU/CUDA 工程师 | P1 |
+| **GPU 工程团队** | GPU/CUDA 工程师到位（Phase 1 启动招聘） | P1 |
 | **Prefill-Decode 分离** | 评估和实现 prefill/decode 分离调度，提升 GPU 利用率 | P1 |
 | **Fine-tuning（评估）** | 评估需求，决定是否 Phase 3 做 | P2 |
 
@@ -102,7 +102,7 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 | 多租户 Bug 数 | < 5 个严重问题 |
 
 ### 里程碑
-- **M2.1（第 4 月末）**：Operations 模块 MVP，可查看集群/节点/GPU 利用率。启动 vLLM fork 和 GPU 工程师招聘。
+- **M2.1（第 4 月末）**：Operations 模块 MVP，可查看集群/节点/GPU 利用率。启动 Zealot fork。
 - **M2.2（第 5 月末）**：多租户 + RBAC 完整上线。首个 CUDA kernel 优化完成（attention kernel）。
 - **M2.3（第 6 月末）**：成本归因和预算告警可用。Prefill-Decode 分离原型验证，GPU 利用率 > 50%。
 
@@ -140,8 +140,8 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 | 审计日志完整性 | 100% 覆盖敏感操作 |
 
 ### 里程碑
-- **M3.1（第 8 月末）**：Zealot 1.0 alpha 发布，内部 benchmark 达到 vLLM vanilla 的 2x。私有化 Console + Setup Wizard 第一个 POC。
-- **M3.2（第 10 月末）**：Zealot 1.0 stable，审计日志 + SSO 上线。
+- **M3.1（第 9 月末）**：Zealot alpha 发布，内部 benchmark 达到 vLLM vanilla 的 2x。私有化 Console + Setup Wizard 第一个 POC。
+- **M3.2（第 11 月末）**：Zealot 1.0 stable，审计日志 + SSO 上线。
 - **M3.3（第 12 月末）**：Zealot 性能达到 Together TIE 的 80%+，私有化方案产品化。
 
 ---
