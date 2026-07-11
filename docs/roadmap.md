@@ -1,6 +1,7 @@
 # Ultralisk 产品路线图（Roadmap）
 
-> **状态**：v0.2（2026-07-10）  
+> **工程技术路线图**: 详见 `docs/ENGINEERING_ROADMAP.md`——按工作流（Gateway/Engine/Control Plane/Infra）组织的里程碑计划。
+> **版本**: v0.3（2026-07-11）  
 > **范围**：Ultralisk 控制台、公有云 API、私有化部署  
 > **周期**：18 个月，分 4 个 Phase  
 > **目标**：先验证公有云 API 控制台，再叠加企业管控平台，最终交付私有化方案。
