@@ -9,9 +9,17 @@
 Ultralisk is an AI inference cloud platform. Architecture documented in 11 ADRs under `docs/adr/`.
 
 ```
-Client → Cloud LB → Gateway (Rust) → Runtime Interface (gRPC)
-                    ├─ /v1/admin/* → Console API (TypeScript)
-                    └─ /v1/chat/* → Backend Runtime → vLLM/Zealot → KAI Scheduler → GPU
+Client → Cloud LB → Gateway (Rust) ─┬─ /v1/admin/* → Console API (TypeScript, 管理流量)
+                                    └─ /v1/chat/* → Runtime Interface (gRPC)
+                                                       → Backend Runtime → vLLM/Zealot → GPU
+
+KAI Scheduler: 仅在部署/扩缩容时被 Backend Runtime.LoadModel() 调用，分配 GPU → 创建 Pod。
+              推理请求路径不经过 KAI Scheduler。详见 ADR-004。
+```
+
+```
+Client → Cloud LB → Gateway (Rust) ─┬─ /v1/admin/* → Console API (管理)
+                                    └─ /v1/chat/* → Backend Runtime → vLLM/Zealot → GPU
 ```
 
 **Three layers**: Gateway (entry routing), Control Plane (management), Data Plane (inference execution).  
