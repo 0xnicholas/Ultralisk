@@ -1,1 +1,0 @@
-import{a as i}from"./index-BJ5zLfWR.js";async function o(n,t){return i("/v1/admin/auth/login",{method:"POST",body:JSON.stringify({email:n,password:t})})}async function e(n,t){return i("/v1/admin/auth/accept-invitation",{method:"POST",body:JSON.stringify({token:n,password:t})})}async function c(){return i("/v1/admin/auth/me")}export{e as acceptInvitation,c as getMe,o as login};

@@ -87,6 +87,9 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 | **Endpoint 增强** | Reserved/Dedicated、自动扩缩容、指标监控 | P1 |
 | **成本归因** | 按模型 / endpoint / API key / 团队 / 项目拆分 | P1 |
 | **预算告警** | 月度预算阈值，邮件/Slack 通知 | P1 |
+| **推理引擎 vLLM fork** | Fork vLLM，启动 CUDA kernel 优化（attention kernel、自定义量化） | P1 |
+| **GPU 工程团队** | 招聘 2-3 名 GPU/CUDA 工程师 | P1 |
+| **Prefill-Decode 分离** | 评估和实现 prefill/decode 分离调度，提升 GPU 利用率 | P1 |
 | **Fine-tuning（评估）** | 评估需求，决定是否 Phase 3 做 | P2 |
 
 ### 成功指标
@@ -98,9 +101,9 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 | 多租户 Bug 数 | < 5 个严重问题 |
 
 ### 里程碑
-- **M2.1（第 4 月末）**：Operations 模块 MVP，可查看集群/节点/GPU 利用率。
-- **M2.2（第 5 月末）**：多租户 + RBAC 完整上线，支持项目级隔离。
-- **M2.3（第 6 月末）**：成本归因和预算告警可用，开始向企业客户销售。
+- **M2.1（第 4 月末）**：Operations 模块 MVP，可查看集群/节点/GPU 利用率。启动 vLLM fork 和 GPU 工程师招聘。
+- **M2.2（第 5 月末）**：多租户 + RBAC 完整上线。首个 CUDA kernel 优化完成（attention kernel）。
+- **M2.3（第 6 月末）**：成本归因和预算告警可用。Prefill-Decode 分离原型验证，GPU 利用率 > 50%。
 
 ---
 
@@ -113,6 +116,10 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 
 | 模块 | 交付内容 | 优先级 |
 |------|---------|--------|
+| **Zealot 1.0 发布** | Ultralisk Inference Engine 1.0，性能目标达到 Together TIE 的 80%+ | P0 |
+| **GPU 工程团队扩充** | GPU/CUDA 团队扩至 5-8 人 | P1 |
+| **RadixAttention 集成** | 借鉴 SGLang 前缀树 KV cache，集成到 Zealot | P1 |
+| **全局公平调度** | Continuous Batching 公平性调度，降尾延迟 | P1 |
 | **私有化控制台** | 同一套 Console 代码通过构建配置切换 SaaS/私有化模式 | P0 |
 | **Setup Wizard** | 引导完成 K8s 接入、存储配置、GPU 节点注册、License 激活 | P1 |
 | **Offline Model Registry** | 支持导入 HuggingFace / 本地模型，不依赖外网 | P1 |
@@ -132,9 +139,9 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 | 审计日志完整性 | 100% 覆盖敏感操作 |
 
 ### 里程碑
-- **M3.1（第 8 月末）**：私有化 Console + Setup Wizard 第一个 POC 客户验证。
-- **M3.2（第 10 月末）**：审计日志 + SSO 上线，通过首个金融/医疗客户安全评审。
-- **M3.3（第 12 月末）**：私有化方案产品化，形成标准化交付包和文档。
+- **M3.1（第 8 月末）**：Zealot 1.0 alpha 发布，内部 benchmark 达到 vLLM vanilla 的 2x。私有化 Console + Setup Wizard 第一个 POC。
+- **M3.2（第 10 月末）**：Zealot 1.0 stable，审计日志 + SSO 上线。
+- **M3.3（第 12 月末）**：Zealot 性能达到 Together TIE 的 80%+，私有化方案产品化。
 
 ---
 
@@ -147,9 +154,9 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 
 | 模块 | 交付内容 | 优先级 |
 |------|---------|--------|
+| **Zealot 持续优化** | 追平 Together TIE 性能，建立推理引擎品牌 | P1 |
+| **高级推理优化** | 进一步的 kernel 级优化，支持 B200/GB200 等新硬件 | P2 |
 | **客户私有模型** | 支持客户上传/导入自有模型并部署 | P1 |
-| **GPU 智能调度（L2）** | 基于负载、成本、SLA 的自动调度 | P1 |
-| **高级推理优化** | Speculative Decoding（Medusa）、Prefill-Decode 分离 | P2 |
 | **模型扩展** | 20+ 模型，覆盖更多场景 | P2 |
 | **Fine-tuning Jobs** | 如 Phase 2 评估通过，则上线 LoRA/全参数微调 | P2 |
 | **专业服务团队** | 私有化交付、客户成功、技术支持 | P2 |

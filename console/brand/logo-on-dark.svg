@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ultralisk">
+  <title>Ultralisk (on dark)</title>
+  <defs>
+    <!-- Brighter stops tuned for dark backgrounds (>= #0A0A0A) -->
+    <linearGradient id="ultraliskGradientOnDark" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#A78BFA"/>
+      <stop offset="100%" stop-color="#67E8F9"/>
+    </linearGradient>
+    <filter id="softGlow" x="-25%" y="-25%" width="150%" height="150%">
+      <feGaussianBlur stdDeviation="1.2" result="blur"/>
+      <feMerge>
+        <feMerge node="blur"/>
+        <feMerge node="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+  <g fill="url(#ultraliskGradientOnDark)" filter="url(#softGlow)">
+    <path d="M 12 12 C 48.64 26.02, 73.98 51.36, 88 88 C 51.36 73.98, 26.02 48.64, 12 12 Z"/>
+    <path d="M 88 12 C 51.36 26.02, 26.02 51.36, 12 88 C 48.64 73.98, 73.98 48.64, 88 12 Z"/>
+  </g>
+</svg>

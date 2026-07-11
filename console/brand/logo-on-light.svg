@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Ultralisk">
+  <title>Ultralisk (on light)</title>
+  <defs>
+    <!-- Deeper stops tuned for light backgrounds (>= #FAFAFA) -->
+    <linearGradient id="ultraliskGradientOnLight" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#5B21B6"/>
+      <stop offset="100%" stop-color="#0E7490"/>
+    </linearGradient>
+  </defs>
+  <g fill="url(#ultraliskGradientOnLight)">
+    <path d="M 12 12 C 48.64 26.02, 73.98 51.36, 88 88 C 51.36 73.98, 26.02 48.64, 12 12 Z"/>
+    <path d="M 88 12 C 51.36 26.02, 26.02 51.36, 12 88 C 48.64 73.98, 73.98 48.64, 88 12 Z"/>
+  </g>
+</svg>
