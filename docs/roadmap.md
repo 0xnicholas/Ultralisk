@@ -42,11 +42,11 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 | 模块 | 交付内容 | 优先级 |
 |------|---------|--------|
 | **Backend API** | `POST /v1/chat/completions`、`/v1/embeddings`、`GET /v1/models` 及配套管理 API | P0 |
-| **推理能力** | Serverless + Batch（50% 折扣），支持 2 个模型：Llama 3.1 8B、Llama 3.3 70B | P0 |
+| **推理能力** | Serverless + Batch，支持 2 个模型：Llama 3.1 8B、Llama 3.3 70B | P0 |
 | **Console** | Dashboard、Models、Model Detail、Playground、API Keys、Endpoints、Batch Jobs、Billing | P0 |
 | **模型目录** | 精选 2 个模型，含定价、能力标签、API 示例 | P0 |
 | **用户系统** | 注册/登录/邀请、Organization、默认 Project、基础角色（Owner/Admin/Developer/Read-only）| P0 |
-| **Endpoint 范围** | Phase 1 仅支持 Serverless / Reserved；Dedicated Endpoint 放到 Phase 2 | P0 |
+| **Endpoint 范围** | Phase 1 仅支持 Serverless / Batch；Reserved Endpoint 放到 Phase 2，Dedicated Endpoint 放到 Phase 3 | P0 |
 | **计费** | 余额、充值、按 token 计费、基础用量图表 | P0 |
 | **主题** | light / dark / system | P0 |
 
@@ -63,7 +63,7 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 | Playground → API key 转化率 | > 30% |
 | 控制台 DAU/WAU | 持续增长 |
 | API P99 延迟 | < 2s |
-| Batch 折扣后成本 | 达到 Serverless 的 50% |
+| GPU 利用率 | > 30% |
 
 ### 里程碑
 - **M1.1（第 1 月末）**：Backend API + Playground 可用，内部 dogfood。
@@ -85,7 +85,7 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 | **模型扩展** | 扩展到 10 个模型，覆盖 Chat / Embedding / Code / Vision 主力模型 | P1 |
 | **多租户** | Organization → Project → Resource 三级隔离 | P1 |
 | **RBAC 增强** | Owner/Admin/Developer/Read-only/Billing 完整权限矩阵 | P1 |
-| **Endpoint 增强** | Reserved/Dedicated、自动扩缩容、指标监控 | P1 |
+| **Endpoint 增强** | Reserved、自动扩缩容、指标监控 | P1 |
 | **成本归因** | 按模型 / endpoint / API key / 团队 / 项目拆分 | P1 |
 | **预算告警** | 月度预算阈值，邮件/Slack 通知 | P1 |
 | **推理引擎 vLLM fork** | Fork vLLM，启动 CUDA kernel 优化（attention kernel、自定义量化） | P1 |
