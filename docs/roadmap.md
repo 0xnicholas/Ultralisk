@@ -54,7 +54,7 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 ### 技术选型（锁定）
 - 推理引擎：**vLLM**
 - 量化：**AWQ INT4**（MVP），**FP8** 作为第二优先
-- 前端：**React + TypeScript + shadcn/ui + Tailwind CSS**
+- 前端：**React + TypeScript + Mantine v9**（详见 `console/console-ui`）
 - 后端：与 Console 严格解耦，API 契约见 `docs/prd-console-api.md`
 
 ### 成功指标
@@ -214,7 +214,7 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 
 1. **本周**：评审并确认 Phase 1 范围，锁定模型列表和定价。
 2. **本周**：评审 `docs/prd-console.md` 和 `docs/prd-console-api.md`，冻结页面和 API 契约。
-3. **第 1 周**：搭建前端项目骨架（React + shadcn/ui + Tailwind）。
+3. **第 1 周**：搭建前端项目骨架（React + Mantine v9）。
 4. **第 2 周**：搭建后端 vLLM 推理环境，完成第一个 `/v1/chat/completions` 调用。
 5. **第 3 周**：完成 Dashboard + Playground 前端页面，接入 mock API。
 

@@ -458,7 +458,7 @@ Console 依赖 Backend 提供以下 API（详细契约见 `docs/prd-console-api.
 | 问题 | 决策 | 理由 |
 |------|------|------|
 | Phase 1 注册模式 | **Invitation-only + 申请试用** | 早期控制成本、避免滥用；付费后开放注册。 |
-| 前端组件库 | **shadcn/ui + Tailwind CSS** | 与 React/TypeScript 生态契合，自定义能力强，适合 B2B 控制台。 |
+| 前端组件库 | **Mantine v9** | 实际代码使用 Mantine，非原计划 shadcn/ui |
 | 文档站点 | **外链独立 docs 站点（docs.ultralisk.io）** | 便于 SEO、版本管理和私有化时独立部署。 |
 | 私有化前端代码库 | **复用同一份代码库** | 通过环境变量/构建配置切换 SaaS/私有化模式，降低维护成本。 |
 | Phase 1 移动端 | **仅保证桌面端可用，不做移动端适配** | 控制台是生产力工具，首屏使用场景在桌面；响应式基础即可。 |
