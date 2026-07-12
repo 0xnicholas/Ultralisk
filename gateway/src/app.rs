@@ -9,6 +9,7 @@ use axum::{
 };
 use redis::aio::MultiplexedConnection;
 use tower_http::limit::RequestBodyLimitLayer;
+use sqlx::postgres::PgPoolOptions;
 
 use crate::config::AppConfig;
 use crate::error::AppError;
@@ -21,7 +22,7 @@ use crate::proxy::chat::{self, ProxyState};
 use crate::rate_limit;
 use crate::route::resolver;
 use crate::route::table::{self, ROUTE_TABLE};
-use crate::types::{AuthResult, RouteInfo};
+use crate::types::AuthResult;
 
 /// Shared application state passed to all handlers
 #[derive(Clone)]
@@ -30,6 +31,7 @@ pub struct AppState {
     pub proxy: ProxyState,
     pub admin_proxy: AdminProxyState,
     pub config: AppConfig,
+    pub pg_pool: Option<sqlx::PgPool>,
 }
 
 pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
@@ -46,11 +48,29 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
     let auth_state = AuthState::new(&config, redis_conn.clone());
     let proxy_state = ProxyState::new(config.upstream_timeout_secs);
     let admin_proxy_state = AdminProxyState::new(&config);
+
+    // Optional PG pool for usage writes (non-blocking if unavailable)
+    let pg_pool = match PgPoolOptions::new()
+        .max_connections(5)
+        .connect(&config.database_url)
+        .await
+    {
+        Ok(pool) => {
+            tracing::info!("Connected to PostgreSQL for usage writes");
+            Some(pool)
+        }
+        Err(e) => {
+            tracing::warn!("Failed to connect to PostgreSQL: {}. Usage writes disabled.", e);
+            None
+        }
+    };
+
     let app_state = AppState {
         redis: redis_conn.clone(),
         proxy: proxy_state,
         admin_proxy: admin_proxy_state,
         config: config.clone(),
+        pg_pool,
     };
 
     // Prometheus metrics
@@ -147,8 +167,17 @@ async fn chat_handler(
         .await?;
     }
 
-    // 3. Proxy to vLLM
-    chat::handle_chat(&state.proxy, &auth, &route_info, chat_extractor.raw_body).await
+    // 3. Proxy to vLLM — branch on streaming vs non-streaming
+    let request_id = uuid::Uuid::now_v7().to_string();
+    let started_at = chrono::Utc::now();
+
+    let result = if chat_extractor.request.stream {
+        chat::handle_chat_stream(&state.proxy, &auth, &route_info, chat_extractor.raw_body).await
+    } else {
+        chat::handle_chat(&state.proxy, &auth, &route_info, chat_extractor.raw_body).await
+    };
+
+    Ok(result?)
 }
 
 async fn admin_handler(
