@@ -16,6 +16,12 @@ pub async fn observe(mut request: Request, next: Next) -> Response {
     let started_at = chrono::Utc::now();
     let method = request.method().to_string();
     let path = request.uri().path().to_string();
+    // Normalize admin paths to avoid high cardinality: /v1/admin/models/123 → /v1/admin/*
+    let metric_path = if path.starts_with("/v1/admin/") {
+        "/v1/admin/*".to_string()
+    } else {
+        path.clone()
+    };
     let start = Instant::now();
 
     request.extensions_mut().insert(RequestContext {
@@ -41,13 +47,13 @@ pub async fn observe(mut request: Request, next: Next) -> Response {
     counter!(
         "gateway_requests_total",
         "method" => method.clone(),
-        "path" => path.clone(),
+        "path" => metric_path.clone(),
         "status" => status.as_u16().to_string(),
     );
     histogram!(
         "gateway_request_duration_seconds",
         "method" => method,
-        "path" => path,
+        "path" => metric_path,
     )
     .record(duration.as_secs_f64());
 

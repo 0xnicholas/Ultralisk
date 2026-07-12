@@ -76,7 +76,11 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
     // Prometheus metrics
     let recorder = metrics_exporter_prometheus::PrometheusBuilder::new().build_recorder();
     let metrics_handle = recorder.handle();
-    metrics::set_global_recorder(recorder).unwrap();
+    // Only set once — subsequent calls (e.g., in tests) are no-ops
+    static METRICS_INIT: std::sync::Once = std::sync::Once::new();
+    METRICS_INIT.call_once(|| {
+        metrics::set_global_recorder(recorder).expect("Failed to set metrics recorder");
+    });
 
     // --- Routes ---
 

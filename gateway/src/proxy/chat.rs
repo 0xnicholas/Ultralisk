@@ -117,6 +117,8 @@ pub async fn handle_chat(
         .map_err(|e| AppError::Internal(format!("Failed to build response: {}", e)))?)
 }
 
+const MAX_SSE_BUFFER: usize = 1024 * 1024;  // 1MB — drop connection if exceeded
+
 /// Handle streaming SSE response from vLLM.
 /// Uses a cumulative buffer to correctly parse SSE events split across TCP frames.
 /// Forwards complete events to the client via an mpsc channel.
@@ -194,6 +196,11 @@ pub async fn handle_chat_stream(
                     Ok(bytes) => {
                         let mut buf = buffer.lock().await;
                         buf.extend_from_slice(&bytes);
+                        // Safety: drop connection if buffer exceeds limit (malformed upstream)
+                        if buf.len() > MAX_SSE_BUFFER {
+                            tracing::error!("SSE buffer exceeded {} bytes, dropping connection", MAX_SSE_BUFFER);
+                            return;
+                        }
                         while let Some(pos) = find_sse_boundary(&buf) {
                             let event_bytes = buf.drain(..pos + 2).collect::<Vec<_>>();
                             let event_str = String::from_utf8_lossy(&event_bytes).to_string();
