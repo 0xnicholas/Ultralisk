@@ -38,7 +38,7 @@ async fn bootstrap_admin(console_url: &str, auth_url: &str, redis_url: &str) -> 
 async fn test_admin_get_proxy_200() {
     let redis_url = match check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (console_url, _console) = common::start_mock_console_api().await;
     let (auth_url, _auth) = common::start_mock_auth_service().await;
@@ -58,7 +58,7 @@ async fn test_admin_get_proxy_200() {
 async fn test_admin_post_proxy_200() {
     let redis_url = match check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (console_url, _console) = common::start_mock_console_api().await;
     let (auth_url, _auth) = common::start_mock_auth_service().await;
@@ -79,7 +79,7 @@ async fn test_admin_post_proxy_200() {
 async fn test_header_stripping_client_user_id_replaced() {
     let redis_url = match check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (console_url, _console) = common::start_mock_console_api().await;
     let (auth_url, _auth) = common::start_mock_auth_service().await;
@@ -100,7 +100,7 @@ async fn test_header_stripping_client_user_id_replaced() {
 async fn test_admin_missing_auth_401() {
     let redis_url = match check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (console_url, _console) = common::start_mock_console_api().await;
     let (auth_url, _auth) = common::start_mock_auth_service().await;

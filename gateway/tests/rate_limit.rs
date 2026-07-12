@@ -30,7 +30,7 @@ async fn bootstrap(redis_url: &str, auth_url: &str, vllm_addr: &str) -> String {
 async fn test_under_limit_200() {
     let redis_url = match common::check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (vllm_url, _v) = common::start_mock_vllm().await;
     let (auth_url, _a) = common::start_mock_auth_service().await;

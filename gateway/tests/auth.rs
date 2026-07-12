@@ -30,7 +30,7 @@ async fn bootstrap(redis_url: &str, auth_url: &str) -> String {
 async fn test_missing_auth_header_401() {
     let redis_url = match common::check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (auth_url, _a) = common::start_mock_auth_service().await;
     let gw = bootstrap(&redis_url, &auth_url).await;
@@ -42,7 +42,7 @@ async fn test_missing_auth_header_401() {
 async fn test_revoked_key_401() {
     let redis_url = match common::check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (auth_url, _a) = common::start_mock_auth_service().await;
     let gw = bootstrap(&redis_url, &auth_url).await;
@@ -56,7 +56,7 @@ async fn test_revoked_key_401() {
 async fn test_unknown_key_401_with_negative_cache() {
     let redis_url = match common::check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (auth_url, _a) = common::start_mock_auth_service().await;
     let gw = bootstrap(&redis_url, &auth_url).await;
@@ -70,7 +70,7 @@ async fn test_unknown_key_401_with_negative_cache() {
 async fn test_valid_key_passes() {
     let redis_url = match common::check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (auth_url, _a) = common::start_mock_auth_service().await;
     let gw = bootstrap(&redis_url, &auth_url).await;

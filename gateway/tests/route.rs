@@ -11,7 +11,7 @@ fn init() { INIT.call_once(|| { tracing_subscriber::fmt().with_env_filter("off")
 async fn test_model_not_in_route_table_404() {
     let redis_url = match common::check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (auth_url, _a) = common::start_mock_auth_service().await;
     let (vllm_url, _v) = common::start_mock_vllm().await;

@@ -51,7 +51,7 @@ async fn bootstrap(mock_vllm_addr: &str, mock_auth_addr: &str, redis_url: &str) 
 async fn test_non_streaming_chat_200() {
     let redis_url = match check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (vllm_url, _vllm) = common::start_mock_vllm().await;
     let (auth_url, _auth) = common::start_mock_auth_service().await;
@@ -77,7 +77,7 @@ async fn test_non_streaming_chat_200() {
 async fn test_streaming_chat_200() {
     let redis_url = match check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (vllm_url, _vllm) = common::start_mock_vllm().await;
     let (auth_url, _auth) = common::start_mock_auth_service().await;
@@ -105,7 +105,7 @@ async fn test_streaming_chat_200() {
 async fn test_missing_auth_401() {
     let redis_url = match check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (vllm_url, _vllm) = common::start_mock_vllm().await;
     let (auth_url, _auth) = common::start_mock_auth_service().await;
@@ -126,7 +126,7 @@ async fn test_missing_auth_401() {
 async fn test_invalid_model_404() {
     let redis_url = match check_redis() {
         Some(u) => u,
-        None => return,
+        None => { eprintln!("SKIP: Redis not available"); return; }
     };
     let (vllm_url, _vllm) = common::start_mock_vllm().await;
     let (auth_url, _auth) = common::start_mock_auth_service().await;

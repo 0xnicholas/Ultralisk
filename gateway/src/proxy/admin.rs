@@ -12,6 +12,7 @@ use crate::types::AuthResult;
 pub struct AdminProxyState {
     pub http_client: reqwest::Client,
     pub console_api_url: String,
+    pub max_body_size: usize,
 }
 
 impl AdminProxyState {
@@ -22,6 +23,7 @@ impl AdminProxyState {
                 .build()
                 .unwrap(),
             console_api_url: config.console_api_url.clone(),
+            max_body_size: config.max_body_size,
         }
     }
 }
@@ -41,7 +43,7 @@ pub async fn handle_admin(
 
     // Read request body
     let (parts, body) = request.into_parts();
-    let body_bytes = axum::body::to_bytes(body, 10 * 1024 * 1024)
+    let body_bytes = axum::body::to_bytes(body, state.max_body_size)
         .await
         .map_err(|e| AppError::InvalidRequest(format!("Body too large: {}", e)))?;
 
