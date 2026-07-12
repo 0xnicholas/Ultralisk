@@ -7,6 +7,7 @@ mod extract;
 mod route;
 mod rate_limit;
 mod proxy;
+mod cold_start;
 mod app;
 mod shutdown;
 
