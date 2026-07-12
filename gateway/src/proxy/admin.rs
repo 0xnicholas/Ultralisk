@@ -77,5 +77,5 @@ pub async fn handle_admin(
         .status(status)
         .header("content-type", "application/json")
         .body(Body::from(resp_body))
-        .unwrap())
+        .map_err(|e| AppError::Internal(format!("Failed to build response: {}", e)))?)
 }

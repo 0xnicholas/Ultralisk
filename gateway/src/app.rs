@@ -172,9 +172,15 @@ async fn chat_handler(
     let started_at = chrono::Utc::now();
 
     let result = if chat_extractor.request.stream {
-        chat::handle_chat_stream(&state.proxy, &auth, &route_info, chat_extractor.raw_body).await
+        chat::handle_chat_stream(
+            &state.proxy, &auth, &route_info, chat_extractor.raw_body,
+            &request_id, started_at, state.pg_pool.clone(),
+        ).await
     } else {
-        chat::handle_chat(&state.proxy, &auth, &route_info, chat_extractor.raw_body).await
+        chat::handle_chat(
+            &state.proxy, &auth, &route_info, chat_extractor.raw_body,
+            &request_id, started_at, state.pg_pool.clone(),
+        ).await
     };
 
     Ok(result?)

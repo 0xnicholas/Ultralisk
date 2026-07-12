@@ -35,6 +35,9 @@ pub async fn handle_chat(
     auth: &AuthResult,
     route: &RouteInfo,
     raw_body: Bytes,
+    request_id: &str,
+    started_at: chrono::DateTime<chrono::Utc>,
+    pg_pool: Option<sqlx::PgPool>,
 ) -> Result<Response, AppError> {
     let upstream_url = format!("http://{}/v1/chat/completions", route.pod_address);
 
@@ -90,6 +93,19 @@ pub async fn handle_chat(
                     completion_tokens,
                     "Usage extracted from non-streaming response"
                 );
+
+                crate::proxy::usage_writer::spawn_usage_write(
+                    pg_pool,
+                    request_id.to_string(),
+                    auth.api_key_id.clone(),
+                    auth.user_id.clone(),
+                    auth.org_id.clone(),
+                    route.model_id.clone(),
+                    prompt_tokens,
+                    completion_tokens,
+                    started_at,
+                    "completed",
+                );
             }
         }
     }
@@ -98,7 +114,7 @@ pub async fn handle_chat(
         .status(status)
         .header("content-type", "application/json")
         .body(axum::body::Body::from(body))
-        .unwrap())
+        .map_err(|e| AppError::Internal(format!("Failed to build response: {}", e)))?)
 }
 
 /// Handle streaming SSE response from vLLM.
@@ -110,6 +126,9 @@ pub async fn handle_chat_stream(
     auth: &AuthResult,
     route: &RouteInfo,
     raw_body: Bytes,
+    request_id: &str,
+    started_at: chrono::DateTime<chrono::Utc>,
+    pg_pool: Option<sqlx::PgPool>,
 ) -> Result<Response, AppError> {
     let upstream_url = format!("http://{}/v1/chat/completions", route.pod_address);
 
@@ -133,10 +152,10 @@ pub async fn handle_chat_stream(
 
     if !status.is_success() {
         let body = response.bytes().await.unwrap_or_default();
-        return Ok(Response::builder()
+        return Response::builder()
             .status(status)
             .body(axum::body::Body::from(body))
-            .unwrap());
+            .map_err(|e| AppError::Internal(format!("Failed to build response: {}", e)));
     }
 
     let byte_stream = response.bytes_stream();
@@ -148,11 +167,24 @@ pub async fn handle_chat_stream(
     let (tx, mut rx) = mpsc::unbounded_channel::<String>();
     let client_disconnected = Arc::new(Mutex::new(false));
 
+    // Clone fields needed for usage write before the spawn moves them
+    let api_key_id = auth.api_key_id.clone();
+    let user_id = auth.user_id.clone();
+    let org_id = auth.org_id.clone();
+    let rq_id = request_id.to_string();
+    let pg = pg_pool.clone();
+
     // Spawn background task to consume the upstream byte stream
     tokio::spawn({
         let buffer = buffer.clone();
         let usage_received = usage_received.clone();
         let client_disconnected = client_disconnected.clone();
+        let api_key_id = api_key_id;
+        let user_id = user_id;
+        let org_id = org_id;
+        let rq_id = rq_id;
+        let pg = pg;
+        let model_id = model_id;
         async move {
             let mut byte_stream = byte_stream;
             while let Some(chunk_result) = byte_stream.next().await {
@@ -169,6 +201,20 @@ pub async fn handle_chat_stream(
                                 {
                                     if value.get("usage").is_some() {
                                         *usage_received.lock().await = true;
+                                        let pt = value["usage"]["prompt_tokens"].as_u64().unwrap_or(0);
+                                        let ct = value["usage"]["completion_tokens"].as_u64().unwrap_or(0);
+                                        crate::proxy::usage_writer::spawn_usage_write(
+                                            pg.clone(),
+                                            rq_id.clone(),
+                                            api_key_id.clone(),
+                                            user_id.clone(),
+                                            org_id.clone(),
+                                            model_id.clone(),
+                                            pt,
+                                            ct,
+                                            started_at,
+                                            "completed",
+                                        );
                                         tracing::info!("Usage extracted from SSE stream");
                                     }
                                 }

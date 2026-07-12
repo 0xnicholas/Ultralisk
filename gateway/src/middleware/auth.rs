@@ -108,19 +108,16 @@ pub async fn authenticate(
         }
     };
 
-    // 3. Inject trusted headers
-    request.headers_mut().insert(
-        HeaderName::from_static("x-user-id"),
-        auth_result.user_id.parse().unwrap(),
-    );
-    request.headers_mut().insert(
-        HeaderName::from_static("x-org-id"),
-        auth_result.org_id.parse().unwrap(),
-    );
-    request.headers_mut().insert(
-        HeaderName::from_static("x-api-key-id"),
-        auth_result.api_key_id.parse().unwrap(),
-    );
+    // 3. Inject trusted headers (gracefully handle invalid UTF-8 from Auth Service)
+    if let Ok(val) = auth_result.user_id.parse() {
+        request.headers_mut().insert(HeaderName::from_static("x-user-id"), val);
+    }
+    if let Ok(val) = auth_result.org_id.parse() {
+        request.headers_mut().insert(HeaderName::from_static("x-org-id"), val);
+    }
+    if let Ok(val) = auth_result.api_key_id.parse() {
+        request.headers_mut().insert(HeaderName::from_static("x-api-key-id"), val);
+    }
 
     // 4. Store AuthResult in extensions for downstream use
     request.extensions_mut().insert(auth_result);
@@ -210,18 +207,24 @@ async fn get_or_wait_for_auth_service(
     state: &AuthState,
     api_key: &str,
 ) -> Result<Option<AuthResult>, AppError> {
-    // Check if there's already an inflight request for this key
-    if let Some(notify) = state.inflight.get(api_key) {
-        // Someone else is already fetching — wait for them
-        let notify = notify.value().clone(); // Arc<Notify>
-        notify.notified().await;
-        // Winner has written to Redis. Re-read.
-        return get_cached_auth(&state.redis, api_key).await;
-    }
-
-    // No inflight — we're the winner
-    let notify = Arc::new(Notify::new());
-    state.inflight.insert(api_key.to_string(), notify.clone());
+    // Use DashMap::entry() for atomic check-and-insert — avoids TOCTOU race
+    // where two concurrent requests both see no entry and both call Auth Service.
+    let notify = match state.inflight.entry(api_key.to_string()) {
+        dashmap::mapref::entry::Entry::Occupied(entry) => {
+            // Someone else is already fetching — wait for them
+            let notify = entry.get().clone();
+            drop(entry);
+            notify.notified().await;
+            // Winner has written to Redis. Re-read.
+            return get_cached_auth(&state.redis, api_key).await;
+        }
+        dashmap::mapref::entry::Entry::Vacant(entry) => {
+            // We're the winner — insert a Notify before calling Auth Service
+            let notify = Arc::new(Notify::new());
+            entry.insert(notify.clone());
+            notify
+        }
+    };
 
     let result = call_auth_service(state, api_key).await;
 
