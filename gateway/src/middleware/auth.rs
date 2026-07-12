@@ -8,6 +8,7 @@ use axum::{
     response::Response,
 };
 use dashmap::DashMap;
+use metrics::counter;
 use redis::aio::MultiplexedConnection;
 use serde::Deserialize;
 use tokio::sync::Notify;
@@ -47,7 +48,10 @@ impl AuthState {
     pub fn new(config: &AppConfig, redis: MultiplexedConnection) -> Self {
         Self {
             redis,
-            http_client: reqwest::Client::new(),
+            http_client: reqwest::Client::builder()
+                .timeout(std::time::Duration::from_secs(5))
+                .build()
+                .expect("Failed to build auth HTTP client"),
             auth_service_url: config.auth_service_url.clone(),
             cache_ttl_secs: config.auth_cache_ttl_secs,
             inflight: Arc::new(InflightMap::new()),
@@ -76,7 +80,10 @@ pub async fn authenticate(
 
     let api_key = auth_header
         .strip_prefix(BEARER_PREFIX)
-        .ok_or(AppError::InvalidApiKey)?;
+        .ok_or_else(|| {
+            metrics::counter!("gateway_auth_failures_total", "reason" => "missing_bearer").increment(1);
+            AppError::InvalidApiKey
+        })?;
 
     // 2. Try Redis cache
     let auth_result = match get_cached_auth(&state.redis, api_key).await? {
@@ -90,9 +97,11 @@ pub async fn authenticate(
                 }
                 Ok(None) => {
                     cache_negative(&state.redis, api_key, 5).await?;
+                    metrics::counter!("gateway_auth_failures_total", "reason" => "key_not_found").increment(1);
                     return Err(AppError::InvalidApiKey);
                 }
                 Err(_) => {
+                    metrics::counter!("gateway_auth_failures_total", "reason" => "auth_service_error").increment(1);
                     return Err(AppError::Internal("Auth service unavailable".into()));
                 }
             }

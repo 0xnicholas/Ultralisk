@@ -9,6 +9,7 @@ use tokio::sync::{Mutex, mpsc};
 
 use crate::error::AppError;
 use crate::types::{AuthResult, RouteInfo};
+use metrics::{counter, histogram};
 
 #[derive(Clone)]
 pub struct ProxyState {
@@ -37,6 +38,7 @@ pub async fn handle_chat(
 ) -> Result<Response, AppError> {
     let upstream_url = format!("http://{}/v1/chat/completions", route.pod_address);
 
+    let upstream_start = std::time::Instant::now();
     let response = state
         .http_client
         .post(&upstream_url)
@@ -53,6 +55,16 @@ pub async fn handle_chat(
         .await
         .map_err(|e| AppError::UpstreamError(e.to_string()))?;
 
+    counter!("gateway_upstream_requests_total",
+        "model" => route.model_id.clone(),
+        "pool" => route.pool_name.clone(),
+        "status" => status.as_u16().to_string(),
+    ).increment(1);
+    histogram!("gateway_upstream_duration_seconds",
+        "model" => route.model_id.clone(),
+        "pool" => route.pool_name.clone(),
+    ).record(upstream_start.elapsed().as_secs_f64());
+
     // Extract usage from response (non-streaming path)
     if status.is_success() {
         if let Ok(usage_json) = serde_json::from_slice::<serde_json::Value>(&body) {
@@ -65,6 +77,14 @@ pub async fn handle_chat(
                     .get("completion_tokens")
                     .and_then(|v| v.as_u64())
                     .unwrap_or(0);
+                counter!("gateway_tokens_total",
+                    "model" => route.model_id.clone(),
+                    "direction" => "input",
+                ).increment(prompt_tokens);
+                counter!("gateway_tokens_total",
+                    "model" => route.model_id.clone(),
+                    "direction" => "output",
+                ).increment(completion_tokens);
                 tracing::info!(
                     prompt_tokens,
                     completion_tokens,
@@ -93,6 +113,7 @@ pub async fn handle_chat_stream(
 ) -> Result<Response, AppError> {
     let upstream_url = format!("http://{}/v1/chat/completions", route.pod_address);
 
+    let upstream_start = std::time::Instant::now();
     let response = state
         .http_client
         .post(&upstream_url)
@@ -104,6 +125,12 @@ pub async fn handle_chat_stream(
         .map_err(|e| AppError::UpstreamError(e.to_string()))?;
 
     let status = response.status();
+    counter!("gateway_upstream_requests_total",
+        "model" => route.model_id.clone(),
+        "pool" => route.pool_name.clone(),
+        "status" => status.as_u16().to_string(),
+    ).increment(1);
+
     if !status.is_success() {
         let body = response.bytes().await.unwrap_or_default();
         return Ok(Response::builder()
@@ -119,11 +146,13 @@ pub async fn handle_chat_stream(
     let usage_received = Arc::new(Mutex::new(false));
     let model_id = route.model_id.clone();
     let (tx, mut rx) = mpsc::unbounded_channel::<String>();
+    let client_disconnected = Arc::new(Mutex::new(false));
 
     // Spawn background task to consume the upstream byte stream
     tokio::spawn({
         let buffer = buffer.clone();
         let usage_received = usage_received.clone();
+        let client_disconnected = client_disconnected.clone();
         async move {
             let mut byte_stream = byte_stream;
             while let Some(chunk_result) = byte_stream.next().await {
@@ -131,11 +160,9 @@ pub async fn handle_chat_stream(
                     Ok(bytes) => {
                         let mut buf = buffer.lock().await;
                         buf.extend_from_slice(&bytes);
-                        // Split on double-newline (SSE event boundary)
                         while let Some(pos) = find_sse_boundary(&buf) {
                             let event_bytes = buf.drain(..pos + 2).collect::<Vec<_>>();
                             let event_str = String::from_utf8_lossy(&event_bytes).to_string();
-                            // Check for usage in this event
                             if event_str.contains("\"usage\"") {
                                 if let Ok(value) =
                                     serde_json::from_str::<serde_json::Value>(event_str.trim())
@@ -146,7 +173,11 @@ pub async fn handle_chat_stream(
                                     }
                                 }
                             }
-                            let _ = tx.send(event_str);
+                            if tx.send(event_str).is_err() {
+                                // Client disconnected — stop sending
+                                *client_disconnected.lock().await = true;
+                                return;
+                            }
                         }
                     }
                     Err(e) => {
@@ -157,12 +188,18 @@ pub async fn handle_chat_stream(
             }
             // After stream ends, check if usage was received
             let got_usage = *usage_received.lock().await;
-            if !got_usage {
+            let cancelled = *client_disconnected.lock().await;
+            if cancelled && !got_usage {
+                metrics::counter!(
+                    "gateway_cancelled_without_usage_total",
+                    "model" => model_id.clone()
+                ).increment(1);
+                tracing::warn!("Client disconnected before usage received");
+            } else if !got_usage {
                 metrics::counter!(
                     "gateway_missing_usage_total",
                     "model" => model_id.clone()
-                )
-                .increment(1);
+                ).increment(1);
                 tracing::warn!("SSE stream ended without usage data");
             }
         }
