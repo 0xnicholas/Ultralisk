@@ -2,16 +2,12 @@ mod config;
 mod error;
 mod health;
 mod types;
+mod middleware;
+mod extract;
 mod route;
-
-// Stub modules — will be implemented in later tasks
-// mod middleware { pub mod auth; pub mod observe; }
-// mod extract { pub mod chat_request; }
-// mod route { pub mod table; pub mod resolver; }
-// mod rate_limit;
-// mod proxy { pub mod chat; pub mod admin; pub mod usage_writer; }
-// mod shutdown;
-// mod app;
+mod rate_limit;
+mod proxy;
+mod app;
 
 use config::AppConfig;
 use tracing_subscriber::layer::SubscriberExt;
@@ -28,7 +24,18 @@ async fn main() -> anyhow::Result<()> {
     let config = AppConfig::from_env();
     tracing::info!("Starting Gateway on port {}", config.gateway_port);
 
-    tracing::info!("Gateway scaffold ready — app::build not wired yet");
+    let app = app::build(config.clone()).await?;
+
+    let listener =
+        tokio::net::TcpListener::bind(format!("0.0.0.0:{}", config.gateway_port)).await?;
+    tracing::info!("Gateway listening on port {}", config.gateway_port);
+
+    axum::serve(listener, app)
+        .with_graceful_shutdown(async {
+            tokio::signal::ctrl_c().await.ok();
+            tracing::info!("Shutdown signal received");
+        })
+        .await?;
 
     Ok(())
 }
