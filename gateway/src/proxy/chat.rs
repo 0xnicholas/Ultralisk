@@ -164,7 +164,7 @@ pub async fn handle_chat_stream(
     let buffer: Arc<Mutex<Vec<u8>>> = Arc::new(Mutex::new(Vec::new()));
     let usage_received = Arc::new(Mutex::new(false));
     let model_id = route.model_id.clone();
-    let (tx, mut rx) = mpsc::unbounded_channel::<String>();
+    let (tx, mut rx) = mpsc::channel::<String>(1024);  // bounded — prevents memory leak from slow clients
     let client_disconnected = Arc::new(Mutex::new(false));
 
     // Clone fields needed for usage write before the spawn moves them
@@ -173,9 +173,11 @@ pub async fn handle_chat_stream(
     let org_id = auth.org_id.clone();
     let rq_id = request_id.to_string();
     let pg = pg_pool.clone();
+    let model_id_for_panic = model_id.clone();  // clone for use after spawn moves model_id
 
-    // Spawn background task to consume the upstream byte stream
-    tokio::spawn({
+    // Spawn background task to consume the upstream byte stream.
+    // Store the JoinHandle so panics are detected and logged.
+    let sse_handle = tokio::spawn({
         let buffer = buffer.clone();
         let usage_received = usage_received.clone();
         let client_disconnected = client_disconnected.clone();
@@ -219,7 +221,7 @@ pub async fn handle_chat_stream(
                                     }
                                 }
                             }
-                            if tx.send(event_str).is_err() {
+                            if tx.send(event_str).await.is_err() {
                                 // Client disconnected — stop sending
                                 *client_disconnected.lock().await = true;
                                 return;
@@ -247,6 +249,21 @@ pub async fn handle_chat_stream(
                     "model" => model_id.clone()
                 ).increment(1);
                 tracing::warn!("SSE stream ended without usage data");
+            }
+        }
+    });
+
+    // Monitor the SSE task for panics
+    tokio::spawn(async move {
+        match sse_handle.await {
+            Ok(()) => {} // normal completion
+            Err(e) => {
+                tracing::error!(
+                    error = %e,
+                    model = %model_id_for_panic,
+                    "SSE background task panicked"
+                );
+                metrics::counter!("gateway_sse_panics_total", "model" => model_id_for_panic).increment(1);
             }
         }
     });

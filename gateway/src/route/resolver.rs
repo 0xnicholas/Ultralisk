@@ -51,22 +51,11 @@ mod tests {
     use std::collections::HashMap;
     use std::sync::Arc;
 
-    fn reset() {
-        let mut routes = HashMap::new();
-        routes.insert(
-            "_default".to_string(),
-            Pool {
-                name: "_default".to_string(),
-                strategy: "serverless".to_string(),
-                pods: vec![Pod {
-                    id: "_d".to_string(),
-                    address: "127.0.0.1:8000".to_string(),
-                    weight: 1,
-                }],
-            },
-        );
+    /// Reset global state to a clean slate. Must be called at the start of each test
+    /// that touches ROUTE_TABLE or RR_COUNTERS.
+    fn reset_no_routes() {
         t::ROUTE_TABLE.store(Arc::new(RouteTable {
-            routes,
+            routes: HashMap::new(),
             version: 0,
         }));
         RR_COUNTERS.clear();
@@ -74,7 +63,7 @@ mod tests {
 
     #[test]
     fn test_2_round_robin_wraps_correctly() {
-        reset();
+        reset_no_routes();
         let pods: Vec<t::Pod> = (0..3)
             .map(|i| t::Pod {
                 id: format!("pod-{}", i),
@@ -100,7 +89,7 @@ mod tests {
 
     #[test]
     fn test_1_model_not_found_returns_404() {
-        reset();
+        reset_no_routes();
         let mut routes = HashMap::new();
         routes.insert("only-model".to_string(), Pool {
             name: "only-pool".to_string(), strategy: "serverless".to_string(),
@@ -113,7 +102,7 @@ mod tests {
 
     #[test]
     fn test_0_empty_pool_returns_503() {
-        reset();
+        reset_no_routes();
         let mut routes = HashMap::new();
         routes.insert("empty-model".to_string(), Pool {
             name: "empty-pool".to_string(), strategy: "serverless".to_string(),

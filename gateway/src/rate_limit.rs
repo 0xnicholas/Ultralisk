@@ -6,7 +6,44 @@ use crate::error::AppError;
 
 const DEFAULT_QUOTA: u64 = 50_000;
 
-/// Check rate limit for (api_key_id, model) using Redis sorted set sliding window.
+/// Atomic rate-limit check via Redis Lua script.
+/// Eliminates the check-then-act race in the multi-step approach.
+const RATE_LIMIT_LUA: &str = r#"
+local key = KEYS[1]
+local now = tonumber(ARGV[1])
+local window_start = tonumber(ARGV[2])
+local limit = tonumber(ARGV[3])
+local member = ARGV[4]
+local ttl = tonumber(ARGV[5])
+local estimated = tonumber(ARGV[6])
+
+-- 1. Remove expired entries
+redis.call('ZREMRANGEBYSCORE', key, '-inf', window_start)
+
+-- 2. Sum tokens in window
+local members = redis.call('ZRANGEBYSCORE', key, window_start, '+inf')
+local total = 0
+for i = 1, #members do
+    local _, tokens = members[i]:match("^(%d+):(%d+)$")
+    if tokens then
+        total = total + tonumber(tokens)
+    end
+end
+
+-- 3. Check limit
+if total + estimated > limit then
+    return 0  -- rate limited
+end
+
+-- 4. Add current request
+redis.call('ZADD', key, now, member)
+redis.call('EXPIRE', key, ttl)
+
+return 1  -- allowed
+"#;
+
+/// Check rate limit for (api_key_id, model) using an atomic Redis Lua script.
+/// Returns Ok(()) if under limit, Err(RateLimitExceeded) if over.
 pub async fn check(
     redis: &MultiplexedConnection,
     api_key_id: &str,
@@ -18,61 +55,35 @@ pub async fn check(
     let limit = quota_limit.unwrap_or(DEFAULT_QUOTA);
     let now_ms = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .unwrap()
+        .unwrap_or_default()
         .as_millis() as u64;
 
     let key = format!("ratelimit:{}:{}:{}", window_secs, api_key_id, model);
     let window_start = now_ms - (window_secs * 1000);
+    let member = format!("{}:{}", now_ms, estimated_tokens);
+    let ttl = window_secs * 2;
 
     let mut conn = redis.clone();
+    let script = redis::Script::new(RATE_LIMIT_LUA);
 
-    // 1. Remove expired entries
-    redis::cmd("ZREMRANGEBYSCORE")
-        .arg(&key)
-        .arg("-inf")
-        .arg(window_start)
-        .query_async::<()>(&mut conn)
-        .await
-        .map_err(|e| AppError::Internal(format!("Redis ZREMRANGEBYSCORE: {}", e)))?;
-
-    // 2. Sum tokens in window
-    let members: Vec<String> = redis::cmd("ZRANGEBYSCORE")
-        .arg(&key)
-        .arg(window_start)
-        .arg("+inf")
-        .query_async(&mut conn)
-        .await
-        .map_err(|e| AppError::Internal(format!("Redis ZRANGEBYSCORE: {}", e)))?;
-
-    let total: u64 = members
-        .iter()
-        .filter_map(|member| member.split(':').nth(1).and_then(|t| t.parse::<u64>().ok()))
-        .sum();
-
-    // 3. Check and record
-    if total + estimated_tokens > limit {
-        return Err(AppError::RateLimitExceeded {
-            retry_after: window_secs,
-        });
-    }
-
-    let member = format!("{}:{}", now_ms, estimated_tokens);
-    redis::cmd("ZADD")
-        .arg(&key)
+    let result: i32 = script
+        .key(&key)
         .arg(now_ms)
+        .arg(window_start)
+        .arg(limit)
         .arg(&member)
-        .query_async::<()>(&mut conn)
+        .arg(ttl)
+        .arg(estimated_tokens)
+        .invoke_async(&mut conn)
         .await
-        .map_err(|e| AppError::Internal(format!("Redis ZADD: {}", e)))?;
+        .map_err(|e| AppError::Internal(format!("Redis Lua script error: {}", e)))?;
 
-    redis::cmd("EXPIRE")
-        .arg(&key)
-        .arg(window_secs * 2)
-        .query_async::<()>(&mut conn)
-        .await
-        .map_err(|e| AppError::Internal(format!("Redis EXPIRE: {}", e)))?;
-
-    Ok(())
+    match result {
+        1 => Ok(()),
+        _ => Err(AppError::RateLimitExceeded {
+            retry_after: window_secs,
+        }),
+    }
 }
 
 /// Estimate token count before inference. Phase 1: chars/4 + max_tokens.
