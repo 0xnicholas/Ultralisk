@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "routes": {
+    "llama-3.1-8b-instruct": {
+      "name": "serverless-llama8b",
+      "strategy": "serverless",
+      "pods": [
+        {"id": "vllm-8b-01", "address": "localhost:8000", "weight": 1}
+      ]
+    }
+  }
+}
