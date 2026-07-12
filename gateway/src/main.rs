@@ -8,6 +8,7 @@ mod route;
 mod rate_limit;
 mod proxy;
 mod app;
+mod shutdown;
 
 use config::AppConfig;
 use tracing_subscriber::layer::SubscriberExt;
@@ -31,10 +32,7 @@ async fn main() -> anyhow::Result<()> {
     tracing::info!("Gateway listening on port {}", config.gateway_port);
 
     axum::serve(listener, app)
-        .with_graceful_shutdown(async {
-            tokio::signal::ctrl_c().await.ok();
-            tracing::info!("Shutdown signal received");
-        })
+        .with_graceful_shutdown(shutdown::graceful_shutdown(config.shutdown_drain_secs))
         .await?;
 
     Ok(())
