@@ -29,6 +29,7 @@ pub struct AppState {
     pub redis: MultiplexedConnection,
     pub proxy: ProxyState,
     pub admin_proxy: AdminProxyState,
+    pub config: AppConfig,
 }
 
 pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
@@ -49,6 +50,7 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
         redis: redis_conn.clone(),
         proxy: proxy_state,
         admin_proxy: admin_proxy_state,
+        config: config.clone(),
     };
 
     // Prometheus metrics
@@ -133,16 +135,17 @@ async fn chat_handler(
 
     let estimated = rate_limit::estimate_tokens(&input_text, chat_extractor.request.max_tokens);
 
-    // TODO: Use config for window_secs
-    rate_limit::check(
-        &state.redis,
-        &auth.api_key_id,
-        &chat_extractor.request.model,
-        quota,
-        60,
-        estimated,
-    )
-    .await?;
+    if state.config.rate_limit_enabled {
+        rate_limit::check(
+            &state.redis,
+            &auth.api_key_id,
+            &chat_extractor.request.model,
+            quota,
+            state.config.rate_limit_window_secs,
+            estimated,
+        )
+        .await?;
+    }
 
     // 3. Proxy to vLLM
     chat::handle_chat(&state.proxy, &auth, &route_info, chat_extractor.raw_body).await
