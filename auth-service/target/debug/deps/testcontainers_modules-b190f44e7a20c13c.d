@@ -1,9 +1,0 @@
-/Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/deps/testcontainers_modules-b190f44e7a20c13c.d: /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/testcontainers-modules-0.11.6/src/lib.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/testcontainers-modules-0.11.6/src/postgres/mod.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/testcontainers-modules-0.11.6/src/../README.md
-
-/Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/deps/libtestcontainers_modules-b190f44e7a20c13c.rlib: /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/testcontainers-modules-0.11.6/src/lib.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/testcontainers-modules-0.11.6/src/postgres/mod.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/testcontainers-modules-0.11.6/src/../README.md
-
-/Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/deps/libtestcontainers_modules-b190f44e7a20c13c.rmeta: /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/testcontainers-modules-0.11.6/src/lib.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/testcontainers-modules-0.11.6/src/postgres/mod.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/testcontainers-modules-0.11.6/src/../README.md
-
-/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/testcontainers-modules-0.11.6/src/lib.rs:
-/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/testcontainers-modules-0.11.6/src/postgres/mod.rs:
-/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/testcontainers-modules-0.11.6/src/../README.md:

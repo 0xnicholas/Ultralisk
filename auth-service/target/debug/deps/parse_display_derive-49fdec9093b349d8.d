@@ -1,8 +1,0 @@
-/Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/deps/parse_display_derive-49fdec9093b349d8.d: /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parse-display-derive-0.9.1/src/lib.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parse-display-derive-0.9.1/src/regex_utils.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parse-display-derive-0.9.1/src/syn_utils.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parse-display-derive-0.9.1/src/format_syntax.rs
-
-/Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/deps/libparse_display_derive-49fdec9093b349d8.dylib: /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parse-display-derive-0.9.1/src/lib.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parse-display-derive-0.9.1/src/regex_utils.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parse-display-derive-0.9.1/src/syn_utils.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parse-display-derive-0.9.1/src/format_syntax.rs
-
-/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parse-display-derive-0.9.1/src/lib.rs:
-/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parse-display-derive-0.9.1/src/regex_utils.rs:
-/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parse-display-derive-0.9.1/src/syn_utils.rs:
-/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/parse-display-derive-0.9.1/src/format_syntax.rs:

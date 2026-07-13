@@ -18,3 +18,4 @@ screenshots/
 
 # Turbo cache
 .turbo/
+auth-service/target/
