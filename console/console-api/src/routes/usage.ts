@@ -6,7 +6,7 @@ const router = Router();
 router.get('/usage', async (req: Request, res: Response) => {
   try {
     const orgId = req.headers['x-org-id'] as string;
-    if (!orgId) return res.status(401).json({ error: 'unauthorized' });
+    if (!orgId) return res.status(401).json({ error: { code: 'unauthorized', message: 'Authentication required' } });
     const days = parseInt(req.query.days as string) || 7;
     const since = new Date(Date.now() - days * 86400000).toISOString();
 
@@ -20,7 +20,7 @@ router.get('/usage', async (req: Request, res: Response) => {
        ORDER BY hour DESC`, [orgId, since]
     );
     res.json({ data: rows });
-  } catch (err) { res.status(500).json({ error: 'internal_error' }); }
+  } catch (err) { res.status(500).json({ error: { code: 'internal_error', message: 'Internal server error' } }); }
 });
 
 export default router;

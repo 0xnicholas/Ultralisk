@@ -24,20 +24,28 @@ router.post('/chat/completions', async (req: Request, res: Response) => {
       res.setHeader('Connection', 'keep-alive');
 
       const reader = response.body?.getReader();
-      if (!reader) return res.status(502).json({ error: 'no_response_body' });
+      if (!reader) return res.status(502).json({ error: { code: 'no_response_body', message: 'Gateway returned no response body' } });
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        res.write(value);
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          res.write(value);
+        }
+        res.end();
+      } catch (streamErr) {
+        if (!res.headersSent) {
+          res.status(502).json({ error: { code: 'upstream_error', message: 'Stream interrupted' } });
+        } else {
+          res.end();
+        }
       }
-      res.end();
     } else {
       const data = await response.json();
       res.status(response.status).json(data);
     }
   } catch (err) {
-    res.status(502).json({ error: 'upstream_error' });
+    res.status(502).json({ error: { code: 'upstream_error', message: 'Upstream service unavailable' } });
   }
 });
 

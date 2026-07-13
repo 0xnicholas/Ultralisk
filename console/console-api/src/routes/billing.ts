@@ -6,7 +6,7 @@ const router = Router();
 router.get('/billing', async (req: Request, res: Response) => {
   try {
     const orgId = req.headers['x-org-id'] as string;
-    if (!orgId) return res.status(401).json({ error: 'unauthorized' });
+    if (!orgId) return res.status(401).json({ error: { code: 'unauthorized', message: 'Authentication required' } });
 
     const yearMonth = new Date().toISOString().substring(0, 7);
     const { rows: [summary] } = await pool.query(
@@ -29,7 +29,7 @@ router.get('/billing', async (req: Request, res: Response) => {
         totalTokens: parseInt(usage?.total_prompt || '0') + parseInt(usage?.total_completion || '0'),
       },
     }});
-  } catch (err) { res.status(500).json({ error: 'internal_error' }); }
+  } catch (err) { res.status(500).json({ error: { code: 'internal_error', message: 'Internal server error' } }); }
 });
 
 export default router;

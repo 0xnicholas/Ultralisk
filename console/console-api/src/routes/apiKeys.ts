@@ -17,7 +17,7 @@ function keyPrefix(key: string): string {
 router.get('/api-keys', async (req: Request, res: Response) => {
   try {
     const userId = req.headers['x-user-id'] as string;
-    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    if (!userId) return res.status(401).json({ error: { code: 'unauthorized', message: 'Authentication required' } });
     const { rows } = await pool.query(
       'SELECT id, key_prefix, name, status, quota_limits, last_used_at, created_at FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC', [userId]
     );
@@ -25,14 +25,14 @@ router.get('/api-keys', async (req: Request, res: Response) => {
       id: k.id, keyPrefix: k.key_prefix, name: k.name, status: k.status,
       quotaLimits: k.quota_limits, lastUsedAt: k.last_used_at, createdAt: k.created_at,
     }))});
-  } catch (err) { res.status(500).json({ error: 'internal_error' }); }
+  } catch (err) { res.status(500).json({ error: { code: 'internal_error', message: 'Internal server error' } }); }
 });
 
 router.post('/api-keys', async (req: Request, res: Response) => {
   try {
     const userId = req.headers['x-user-id'] as string;
     const orgId = req.headers['x-org-id'] as string;
-    if (!userId || !orgId) return res.status(401).json({ error: 'unauthorized' });
+    if (!userId || !orgId) return res.status(401).json({ error: { code: 'unauthorized', message: 'Authentication required' } });
 
     const { name, quotaLimits } = req.body;
     const plaintext = generateKey();
@@ -42,16 +42,17 @@ router.post('/api-keys', async (req: Request, res: Response) => {
       [userId, orgId, hashKey(plaintext), keyPrefix(plaintext), name, JSON.stringify(quotaLimits || { '*': 50000 })]
     );
     res.status(201).json({ data: { ...key, key: plaintext } });
-  } catch (err) { res.status(500).json({ error: 'internal_error' }); }
+  } catch (err) { res.status(500).json({ error: { code: 'internal_error', message: 'Internal server error' } }); }
 });
 
 router.delete('/api-keys/:id', async (req: Request, res: Response) => {
   try {
     const userId = req.headers['x-user-id'] as string;
-    if (!userId) return res.status(401).json({ error: 'unauthorized' });
-    await pool.query("UPDATE api_keys SET status = 'revoked', revoked_at = now() WHERE id = $1 AND user_id = $2", [req.params.id, userId]);
+    if (!userId) return res.status(401).json({ error: { code: 'unauthorized', message: 'Authentication required' } });
+    const result = await pool.query("UPDATE api_keys SET status = 'revoked', revoked_at = now() WHERE id = $1 AND user_id = $2", [req.params.id, userId]);
+    if (result.rowCount === 0) return res.status(404).json({ error: { code: 'not_found', message: 'API key not found' } });
     res.json({ data: { status: 'revoked' } });
-  } catch (err) { res.status(500).json({ error: 'internal_error' }); }
+  } catch (err) { res.status(500).json({ error: { code: 'internal_error', message: 'Internal server error' } }); }
 });
 
 export default router;

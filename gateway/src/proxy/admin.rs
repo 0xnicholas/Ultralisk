@@ -81,3 +81,42 @@ pub async fn handle_admin(
         .body(Body::from(resp_body))
         .map_err(|e| AppError::Internal(format!("Failed to build response: {}", e)))?)
 }
+
+/// Public admin proxy — no auth required (for login/logout).
+/// Forwards request without injecting user context headers.
+pub async fn handle_admin_public(
+    state: &AdminProxyState,
+    request: axum::extract::Request,
+) -> Result<Response, AppError> {
+    let path = request.uri().path_and_query()
+        .map(|pq| pq.as_str()).unwrap_or("/");
+    let upstream_url = format!("{}{}", state.console_api_url.trim_end_matches('/'), path);
+
+    let (parts, body) = request.into_parts();
+    let body_bytes = axum::body::to_bytes(body, state.max_body_size)
+        .await
+        .map_err(|e| AppError::InvalidRequest(format!("Body too large: {}", e)))?;
+
+    let mut req_builder = state.http_client
+        .request(parts.method.clone(), &upstream_url);
+
+    for (name, value) in parts.headers.iter() {
+        let lower = name.as_str().to_lowercase();
+        if lower != "host" {
+            req_builder = req_builder.header(name.as_str(), value.as_bytes());
+        }
+    }
+
+    let response = req_builder.body(body_bytes).send().await
+        .map_err(|e| AppError::UpstreamError(e.to_string()))?;
+
+    let status = response.status();
+    let resp_body = response.bytes().await
+        .map_err(|e| AppError::UpstreamError(e.to_string()))?;
+
+    Ok(Response::builder()
+        .status(status)
+        .header("content-type", "application/json")
+        .body(Body::from(resp_body))
+        .map_err(|e| AppError::Internal(format!("Failed to build response: {}", e)))?)
+}

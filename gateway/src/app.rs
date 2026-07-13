@@ -95,8 +95,8 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
 
     // Admin — public routes (login/logout, no auth)
     let admin_public = Router::new()
-        .route("/v1/admin/auth/login", post(admin_handler))
-        .route("/v1/admin/auth/logout", post(admin_handler))
+        .route("/v1/admin/auth/login", post(public_admin_handler))
+        .route("/v1/admin/auth/logout", post(public_admin_handler))
         .with_state(app_state.clone());
 
     // Admin — protected routes (all other /v1/admin/* require auth)
@@ -204,4 +204,13 @@ async fn admin_handler(
     request: axum::extract::Request,
 ) -> Result<Response, AppError> {
     admin::handle_admin(&state.admin_proxy, &auth, request).await
+}
+
+/// Public admin handler for login/logout routes (no auth required).
+/// Forwards to Console API without injecting user context headers.
+async fn public_admin_handler(
+    State(state): State<AppState>,
+    request: axum::extract::Request,
+) -> Result<Response, AppError> {
+    admin::handle_admin_public(&state.admin_proxy, request).await
 }

@@ -14,7 +14,7 @@ router.post('/auth/login', async (req: Request, res: Response) => {
     });
     res.json({ data: result });
   } catch (err: any) {
-    res.status(err.status || 500).json({ error: err.message });
+    res.status(err.status || 500).json({ error: { code: 'auth_error', message: err.message } });
   }
 });
 
@@ -26,10 +26,10 @@ router.post('/auth/logout', (_req: Request, res: Response) => {
 router.get('/auth/me', async (req: Request, res: Response) => {
   try {
     const userId = req.headers['x-user-id'] as string;
-    if (!userId) return res.status(401).json({ error: 'unauthorized' });
+    if (!userId) return res.status(401).json({ error: { code: 'unauthorized', message: 'Authentication required' } });
 
     const { rows: [user] } = await pool.query('SELECT id, org_id, email, display_name, role FROM users WHERE id = $1', [userId]);
-    if (!user) return res.status(404).json({ error: 'user_not_found' });
+    if (!user) return res.status(404).json({ error: { code: 'user_not_found', message: 'User not found' } });
 
     const { rows: [org] } = await pool.query('SELECT id, name FROM orgs WHERE id = $1', [user.org_id]);
     const { rows: keys } = await pool.query(
@@ -45,7 +45,7 @@ router.get('/auth/me', async (req: Request, res: Response) => {
       })),
     }});
   } catch (err) {
-    res.status(500).json({ error: 'internal_error' });
+    res.status(500).json({ error: { code: 'internal_error', message: 'Internal server error' } });
   }
 });
 
