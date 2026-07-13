@@ -1,0 +1,12 @@
+/Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/deps/thiserror-a4dda40d1068fd14.d: /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/build/thiserror-c9d49850645dc662/out/private.rs
+
+/Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/deps/libthiserror-a4dda40d1068fd14.rmeta: /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs /Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/build/thiserror-c9d49850645dc662/out/private.rs
+
+/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/lib.rs:
+/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/aserror.rs:
+/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/display.rs:
+/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/var.rs:
+/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/thiserror-2.0.18/src/private.rs:
+/Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/build/thiserror-c9d49850645dc662/out/private.rs:
+
+# env-dep:OUT_DIR=/Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/build/thiserror-c9d49850645dc662/out

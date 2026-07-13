@@ -1,0 +1,10 @@
+/Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/deps/hyperlocal-6a99a45ed015bbc6.d: /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/lib.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/client.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/server.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/uri.rs
+
+/Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/deps/libhyperlocal-6a99a45ed015bbc6.rlib: /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/lib.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/client.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/server.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/uri.rs
+
+/Users/nicholasl/Documents/build-whatever/Ultralisk/.worktrees/auth-service/auth-service/target/debug/deps/libhyperlocal-6a99a45ed015bbc6.rmeta: /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/lib.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/client.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/server.rs /Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/uri.rs
+
+/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/lib.rs:
+/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/client.rs:
+/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/server.rs:
+/Users/nicholasl/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/hyperlocal-0.9.1/src/uri.rs:
