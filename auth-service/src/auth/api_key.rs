@@ -19,3 +19,36 @@ pub fn hash_key(key: &str) -> String {
     hasher.update(key.as_bytes());
     hex::encode(hasher.finalize())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_generate_key_format() {
+        let key = generate_key();
+        assert!(key.starts_with("ultr_"));
+        assert_eq!(key.len(), 37);
+    }
+
+    #[test]
+    fn test_hash_key_deterministic() {
+        let h1 = hash_key("ultr_test123");
+        let h2 = hash_key("ultr_test123");
+        assert_eq!(h1, h2);
+    }
+
+    #[test]
+    fn test_hash_key_different_keys() {
+        let h1 = hash_key("ultr_aaa");
+        let h2 = hash_key("ultr_bbb");
+        assert_ne!(h1, h2);
+    }
+
+    #[test]
+    fn test_key_prefix() {
+        let prefix = key_prefix("ultr_abc123def456");
+        assert_eq!(prefix, "ultr_abc1");
+        assert_eq!(prefix.len(), 9);
+    }
+}
