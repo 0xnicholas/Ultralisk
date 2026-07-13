@@ -29,18 +29,20 @@ Together AI 的案例：自研 TIE 引擎声称 4x 于开源 vLLM，核心优化
 
 **Phase 1（第 1-3 月）**：直接使用开源 **vLLM** 作为推理引擎，不上自研。
 
-**Phase 2（第 4-6 月）**：启动自研，从 fork vLLM 开始，聚焦 GPU 利用率优化。
+**Phase 2（第 4-6 月）**：发布 Zealot 独立推理引擎，不经过 vLLM fork。Zealot 以独立进程运行，实现 Runtime Interface (gRPC)，直接替代 vLLM。Block Manager、Constrained Decode、Scheduler 全部 Rust native。
 
-**Phase 3（第 7-12 月）**：发布 Ultralisk Inference Engine（Zealot），作为差异化竞争壁垒。
+**Phase 3（第 7-12 月）**：Zealot 持续优化，性能达到 Together TIE 的 80%+，成为 Ultralisk 默认引擎。
 
 ```
-Phase 1              Phase 2                Phase 3
-vLLM (vanilla)  →    vLLM fork + 优化  →    Zealot (自研引擎)
-─────                ──────                ────
-• 快速上线            • CUDA kernel 优化     • 完整自研栈
-• 社区跟进            • 自定义量化           • 定价竞争力
-• 验证产品            • attention 优化       • 护城河
-• 0 引擎工程师        • 2-3 GPU 工程师      • 5-8 引擎团队
+Phase 1              Phase 2                    Phase 3
+vLLM (vanilla)  →    Zealot (独立引擎)     →    Zealot 持续优化
+─────                ──────                    ────
+• 快速上线            • 独立进程，替代 vLLM       • 追平 Together TIE
+• 社区跟进            • Rust Block Manager       • 定价护城河
+• 验证产品            • Constrained Decode       • 5-8 引擎团队
+• 0 引擎工程师        • CUDA kernel 优化
+                     • 自定义量化
+                     • 2-3 GPU 工程师
 ```
 
 ---
@@ -91,25 +93,27 @@ vLLM (vanilla)  →    vLLM fork + 优化  →    Zealot (自研引擎)
 ### 技术路线
 
 ```
-Phase 2 自研起点：
+Phase 2：Zealot 独立引擎
 
-vLLM (upstream)
+Zealot Backend (Rust 进程, tonic gRPC)
     │
-    ├── 保持 API 兼容（OpenAI compatible server）
-    ├── 保持模型加载逻辑（weight loader）
+    ├── Runtime Interface 原生实现（替代 vLLM FastAPI Server）
+    ├── Block Manager (Rust)
+    ├── Constrained Decode (Rust)
+    ├── Scheduler (Rust)
+    ├── Attention Kernel (CUDA，改装自 FA-3)
+    ├── Quantization Kernel (CUDA，per-layer mixed precision)
     │
-    └── REPLACED:
-        ├── Block Manager（Python → Rust，PagedAttention 算法保留，实现换 Rust ownership 保证安全）
-        ├── Attention kernel（替换为针对性优化的 FA-kernel）
-        ├── Quantization（替换为自定义量化方案）
-        ├── Scheduler（替换为 Prefill-Decode 分离调度器）
-        └── Speculative decoder（替换为定制 draft model）
+    └── Model Loader (Python, HuggingFace)
+        ↑ Rust 主进程通过 PyO3 嵌入 Python 解释器，仅用于加载权重。
+          vLLM 代码零依赖——Model Loader 直接调 HuggingFace transformers。
 ```
 
-核心原则：**fork 而非 rewrite**。vLLM 的模型加载、API 服务逻辑不动。只替换关键组件——Block Manager（Python→Rust）、GPU kernel 和调度逻辑。这样：
-- 新模型发布时仍能快速支持（模型加载逻辑不变）
-- 优化点聚焦在高 ROI 的 kernel 层
-- 团队规模可控（不需要完整的引擎团队）
+核心原则：**自建而非 fork**。Zealot 不从 vLLM fork 启动，而是以独立进程构建。
+Python 仅用于 HuggingFace Model Loader（永久需求），其余全部 Rust native。这样：
+- 无 vLLM rebase 负担——不依赖 vLLM 代码库
+- 优化自由度大——Scheduler、Block Manager、Attention 全部可控
+- 团队规模可控——Phase 2 只需 2-3 人，Model Loader 复用 HuggingFace 生态
 
 ### SGLang 的角色
 
@@ -125,20 +129,14 @@ SGLang 和 vLLM 都是**材料**，Zealot 是**成品**。
 
 **正面：**
 - Phase 1 快速上线验证产品（2 周）
-- Phase 2 的优化可对标 Together AI 的性能差距
+- Phase 2 即交付独立 Zealot 引擎，可直接替换 vLLM
 - Phase 3 自有引擎成为定价护城河
 
 **负面：**
 - Phase 2 起需要组建 GPU 工程团队（2-3 人起步，Phase 3 扩到 5-8 人）
-- vLLM upstream 更新需要持续 rebase（维护 fork 的成本）
-- 自研引擎的测试和稳定性保障要求更高
-- **vLLM upstream rebase 维护策略**：随着 fork 深度增加，rebase 冲突会越来越严重。必须尽早定义节奏：
-  - **Cadence**：每 2 周从 upstream main 拉取，评估冲突量。冲突 > 50 文件时暂停优化，专注 rebase。
-  - **冲突处理**：Model Loader（Python，我们不动）→ 零冲突。Attention kernel（我们改装了）→ 手动冲突解决。Scheduler/Block Manager（我们替换为 Rust）→ 无冲突（已完全替换）。
-  - **红线**：连续 2 次 rebase 间隔 > 1 个月 → 风险升级，优先处理。
-  - **自动化**：CI pipeline 每日对比 fork vs upstream main 的 diff，报告冲突预判。
+- 自研引擎的测试和稳定性保障要求更高（无社区 QA）
+- 端到端集成测试需要 GPU 环境（block manager 可在无 GPU 下单元测试）
 
 **待跟进：**
 - Phase 1 期间开始招聘 GPU/CUDA 工程师（提前储备，Phase 2 启动）
 - 定义 Zealot 的性能基准和追赶目标（vs vLLM，vs Together TIE）
-- vLLM v1 重构完成后评估是否 fork v1 还是继续当前版本

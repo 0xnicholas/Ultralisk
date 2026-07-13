@@ -89,7 +89,7 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 | **Endpoint 增强** | Reserved、自动扩缩容、指标监控 | P1 |
 | **成本归因** | 按模型 / endpoint / API key / 团队 / 项目拆分 | P1 |
 | **预算告警** | 月度预算阈值，邮件/Slack 通知 | P1 |
-| **推理引擎 vLLM fork** | Fork vLLM，启动 CUDA kernel 优化（attention kernel、自定义量化） | P1 |
+| **推理引擎 Zealot** | Zealot 独立引擎启动。Block Manager + Constrained Decode Rust 实现。CUDA kernel 优化 | P1 |
 | **GPU 工程团队** | GPU/CUDA 工程师到位（Phase 1 启动招聘） | P1 |
 | **Prefill-Decode 分离** | 评估和实现 prefill/decode 分离调度，提升 GPU 利用率 | P1 |
 | **Fine-tuning（评估）** | 评估需求，决定是否 Phase 3 做 | P2 |
@@ -103,7 +103,7 @@ Phase 1（1-3 月）    Phase 2（4-6 月）     Phase 3（7-12 月）    Phase 
 | 多租户 Bug 数 | < 5 个严重问题 |
 
 ### 里程碑
-- **M2.1（第 4 月末）**：Operations 模块 MVP，可查看集群/节点/GPU 利用率。启动 Zealot fork。
+- **M2.1（第 4 月末）**：Operations 模块 MVP，可查看集群/节点/GPU 利用率。Zealot 引擎启动。
 - **M2.2（第 5 月末）**：多租户 + RBAC 完整上线。首个 CUDA kernel 优化完成（attention kernel）。
 - **M2.3（第 6 月末）**：成本归因和预算告警可用。Prefill-Decode 分离原型验证，GPU 利用率 > 50%。
 

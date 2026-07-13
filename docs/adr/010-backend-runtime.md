@@ -12,10 +12,10 @@
 
 Data Plane 当前的设计是 Gateway 和 Control Plane 直接耦合到具体推理引擎实现。这意味着换引擎、加引擎、升级引擎——每一层都要改。
 
-但我们的引擎策略是**多引擎共存 + 逐步演进**：
-- Phase 1：vLLM（开源基线）
-- Phase 2：Zealot fork（CUDA 优化）
-- Phase 3：Zealot 自研引擎，同时保留 SGLang 做特定场景加速
+但我们的引擎策略是**可替换，一个切换一个**：
+- Phase 1：vLLM（通用推理基线）
+- Phase 2：vLLM + Zealot A/B 灰度，Zealot 替代 vLLM
+- 备选：SGLang（结构化生成场景补充，不在当前路线）
 
 如果 Gateway 需要知道"这个模型用 vLLM 还是 Zealot"并分别写对接逻辑，复杂度随引擎数量线性增长。需要引入一个抽象层，让具体实现成为可替换组件。
 
@@ -30,17 +30,19 @@ Data Plane 当前的设计是 Gateway 和 Control Plane 直接耦合到具体推
                          │ Gateway  │
                          │  + Control Plane│
                          └────────┬────────┘
-                                  │ gRPC (唯一协议)
-                         ┌────────▼────────┐
-                         │ Runtime I/F     │  ← 逻辑边界，proto 定义
-                         └──┬──────┬──────┬┘
-                            │      │      │
-                    ┌───────▼┐ ┌──▼──┐ ┌─▼──────┐
-                    │ vLLM   │ │Zealot│ │ SGLang │  ← Backend Runtimes
-                    │Backend │ │Backend│ │Backend │
-                    └───┬───┘ └──┬──┘ └───┬────┘
-                        │        │        │
-                    vLLM Pod  Zealot Pod  SGLang Pod
+                   │ gRPC (唯一协议)
+                    ┌────────▼────────┐
+                    │ Runtime I/F     │  ← 逻辑边界，proto 定义
+                    └──┬──────────┬───┘
+                       │          │
+               ┌───────▼┐     ┌──▼──────┐
+               │ vLLM   │     │ Zealot  │  ← Backend Runtimes
+               │Backend │     │Backend  │     vLLM: 适配器 gRPC→HTTP
+               └───┬───┘     └──┬──────┘     Zealot: native trait
+                   │            │
+               vLLM Pod    Zealot Pod
+                   │
+           (SGLang Backend — proto 已预留，按需接入)
 ```
 
 **核心原则**：
