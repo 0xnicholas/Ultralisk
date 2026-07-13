@@ -97,16 +97,16 @@ vLLM (upstream)
     │
     ├── 保持 API 兼容（OpenAI compatible server）
     ├── 保持模型加载逻辑（weight loader）
-    ├── 保持 PagedAttention 内存管理
     │
     └── REPLACED:
+        ├── Block Manager（Python → Rust，PagedAttention 算法保留，实现换 Rust ownership 保证安全）
         ├── Attention kernel（替换为针对性优化的 FA-kernel）
         ├── Quantization（替换为自定义量化方案）
         ├── Scheduler（替换为 Prefill-Decode 分离调度器）
         └── Speculative decoder（替换为定制 draft model）
 ```
 
-核心原则：**fork 而非 rewrite**。vLLM 的模型加载、API 服务、内存管理逻辑不动。只替换 GPU 上的关键 kernel 和调度逻辑。这样：
+核心原则：**fork 而非 rewrite**。vLLM 的模型加载、API 服务逻辑不动。只替换关键组件——Block Manager（Python→Rust）、GPU kernel 和调度逻辑。这样：
 - 新模型发布时仍能快速支持（模型加载逻辑不变）
 - 优化点聚焦在高 ROI 的 kernel 层
 - 团队规模可控（不需要完整的引擎团队）

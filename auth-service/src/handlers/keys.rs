@@ -6,6 +6,7 @@ use uuid::Uuid;
 use crate::auth::{jwt, api_key as keygen};
 use crate::db::api_keys;
 use crate::error::AppError;
+use crate::revocation::Revocation;
 
 #[derive(Deserialize)]
 pub struct KeysRequest {
@@ -18,20 +19,6 @@ pub struct KeysRequest {
     pub quota_limits: Option<serde_json::Value>,
 }
 
-#[derive(serde::Serialize)]
-pub struct CreateKeyResponse {
-    pub id: String,
-    pub key: String,
-    pub key_prefix: String,
-    pub name: Option<String>,
-    pub created_at: String,
-}
-
-#[derive(serde::Serialize)]
-pub struct RevokeKeyResponse {
-    pub status: String,
-}
-
 fn extract_jwt(headers: &HeaderMap, secret: &str) -> Result<jwt::Claims, AppError> {
     let auth = headers.get("Authorization")
         .and_then(|v| v.to_str().ok())
@@ -42,6 +29,7 @@ fn extract_jwt(headers: &HeaderMap, secret: &str) -> Result<jwt::Claims, AppErro
 
 pub async fn handler(
     State(pool): State<PgPool>,
+    State(revocation): State<Revocation>,
     State(jwt_secret): State<String>,
     headers: HeaderMap,
     Json(req): Json<KeysRequest>,
@@ -72,8 +60,30 @@ pub async fn handler(
         "revoke" => {
             let key_id = req.key_id.as_deref().ok_or(AppError::InvalidCredentials)?;
             let id = Uuid::parse_str(key_id).map_err(|_| AppError::InvalidCredentials)?;
-            api_keys::revoke(&pool, &id).await?;
-            Ok(Json(serde_json::json!({"status": "revoked"})))
+
+            let key_hash = api_keys::revoke(&pool, &id).await?;
+
+            // ADR-008: Active cache invalidation via Redis
+            // 1. Delete from Redis cache (immediate)
+            let _ = revocation.delete_cache(&key_hash).await;
+
+            // 2. Publish to Pub/Sub channel (notify all Gateway instances)
+            let _ = revocation.publish_revocation(&key_hash).await;
+
+            // 3. Increment revocation version (for Gateway reconnect fallback)
+            let version = revocation.increment_version().await?;
+
+            tracing::info!(
+                key_id = %key_id,
+                key_hash = %key_hash,
+                version = version,
+                "API key revoked with active cache invalidation"
+            );
+
+            Ok(Json(serde_json::json!({
+                "status": "revoked",
+                "revocation_version": version,
+            })))
         }
         _ => Err(AppError::InvalidCredentials),
     }

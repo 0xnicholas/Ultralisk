@@ -129,7 +129,7 @@ Ultralisk 是一个 AI 推理云平台，同时服务三类用户：AI 开发者
 - ADR-002：Gateway 选型为自研 Gateway（Rust），弃用 Kong
 - ADR-003：Data Plane 引擎为 vLLM → Zealot 自研路线
 - ADR-004：GPU 调度为 KAI Scheduler
-- ADR-009：Zealot 推理引擎语言栈（Python 胶水 + Rust 内核 + CUDA 计算）
+- ADR-009：Zealot 推理引擎语言栈（Python 兼容层 + Rust 内核 + CUDA 计算，PyO3 直接 FFI 无胶水层）
 
 **待跟进：**
 - 建立统一的分布式 tracing（OpenTelemetry 跨 Gateway → Engine Pod → Console API）

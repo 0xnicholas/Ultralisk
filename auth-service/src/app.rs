@@ -4,10 +4,12 @@ use sqlx::PgPool;
 use tower_http::limit::RequestBodyLimitLayer;
 use crate::config::AppConfig;
 use crate::handlers;
+use crate::revocation::Revocation;
 
 #[derive(Clone)]
 pub struct AppState {
     pub pool: PgPool,
+    pub revocation: Revocation,
     pub jwt_secret: String,
     pub brute_force: handlers::login::BruteForceMap,
     pub refresh_tokens: handlers::refresh::RefreshTokenStore,
@@ -15,6 +17,9 @@ pub struct AppState {
 
 impl FromRef<AppState> for PgPool {
     fn from_ref(state: &AppState) -> Self { state.pool.clone() }
+}
+impl FromRef<AppState> for Revocation {
+    fn from_ref(state: &AppState) -> Self { state.revocation.clone() }
 }
 impl FromRef<AppState> for String {
     fn from_ref(state: &AppState) -> Self { state.jwt_secret.clone() }
@@ -30,6 +35,9 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
     let pool = PgPool::connect(&config.database_url).await?;
     crate::db::migrate(&pool).await?;
 
+    let redis_client = redis::Client::open(config.redis_url.as_str())?;
+    let redis_conn = redis_client.get_multiplexed_async_connection().await?;
+
     let recorder = metrics_exporter_prometheus::PrometheusBuilder::new().build_recorder();
     let metrics_handle = recorder.handle();
     static METRICS_INIT: std::sync::Once = std::sync::Once::new();
@@ -39,6 +47,7 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
 
     let state = AppState {
         pool,
+        revocation: Revocation::new(redis_conn),
         jwt_secret: config.jwt_secret.clone(),
         brute_force: std::sync::Arc::new(dashmap::DashMap::new()),
         refresh_tokens: std::sync::Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
@@ -50,6 +59,7 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
         .route("/refresh", post(handlers::refresh::handler))
         .route("/keys", post(handlers::keys::handler))
         .route("/me", get(handlers::me::handler))
+        .route("/revocation-version", get(handlers::revocation_version::handler))
         .route("/health", get(|| async { "OK" }))
         .route("/metrics", get(move || {
             let handle = metrics_handle.clone();

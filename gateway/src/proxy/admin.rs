@@ -1,7 +1,7 @@
 use axum::{
     body::Body,
-    extract::{Request, State},
-    response::{IntoResponse, Response},
+    extract::Request,
+    response::Response,
 };
 
 use crate::config::AppConfig;

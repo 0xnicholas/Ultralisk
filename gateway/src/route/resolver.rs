@@ -49,7 +49,9 @@ mod tests {
     use super::*;
     use crate::route::table::{self as t, Pod, Pool, RouteTable};
     use std::collections::HashMap;
-    use std::sync::Arc;
+    use std::sync::{Arc, Mutex};
+
+    static TEST_MUTEX: Mutex<()> = Mutex::new(());
 
     /// Reset global state to a clean slate. Must be called at the start of each test
     /// that touches ROUTE_TABLE or RR_COUNTERS.
@@ -63,6 +65,7 @@ mod tests {
 
     #[test]
     fn test_2_round_robin_wraps_correctly() {
+        let _lock = TEST_MUTEX.lock().unwrap();
         reset_no_routes();
         let pods: Vec<t::Pod> = (0..3)
             .map(|i| t::Pod {
@@ -89,6 +92,7 @@ mod tests {
 
     #[test]
     fn test_1_model_not_found_returns_404() {
+        let _lock = TEST_MUTEX.lock().unwrap();
         reset_no_routes();
         let mut routes = HashMap::new();
         routes.insert("only-model".to_string(), Pool {
@@ -102,6 +106,7 @@ mod tests {
 
     #[test]
     fn test_0_empty_pool_returns_503() {
+        let _lock = TEST_MUTEX.lock().unwrap();
         reset_no_routes();
         let mut routes = HashMap::new();
         routes.insert("empty-model".to_string(), Pool {

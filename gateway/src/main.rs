@@ -6,8 +6,10 @@ mod middleware;
 mod extract;
 mod route;
 mod rate_limit;
+mod batch;
 mod proxy;
 mod cold_start;
+mod revocation;
 pub mod app;
 mod shutdown;
 

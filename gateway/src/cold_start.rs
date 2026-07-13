@@ -1,14 +1,15 @@
 //! Cold start queuing for models not currently loaded on any GPU.
 //!
-//! Phase 1 M3: When a model is not loaded (pool empty), instead of returning
-//! 503, the Gateway queues the request, triggers KAI Scheduler to provision a
-//! GPU, then dequeues and processes the request once the model is ready.
+//! Phase 1 M3: When a model is not loaded (pool empty), the Gateway queues the
+//! request, triggers KAI Scheduler to provision a GPU, then dequeues and
+//! processes the request once the model is ready.
 //!
-//! This module provides the queue infrastructure. Integration with KAI Scheduler
-//! requires a running KAI deployment. Until then, the default behavior is 503.
+//! This module provides the queue infrastructure and KAI Scheduler integration.
+//! The KAI Scheduler is an external service that allocates GPU resources.
 
 use std::collections::HashMap;
 use std::sync::Arc;
+use std::time::Duration;
 use tokio::sync::{Mutex, Notify};
 use tracing;
 
@@ -53,6 +54,26 @@ impl ColdStartQueues {
         entry.notify.clone()
     }
 
+    /// Wait for model to become ready, with timeout.
+    /// Returns Ok(()) if notified, Err if timed out.
+    pub async fn wait_for_ready(
+        &self,
+        model_id: &str,
+        timeout: Duration,
+    ) -> Result<(), crate::error::AppError> {
+        let notify = self.enqueue(model_id).await;
+        tokio::time::timeout(timeout, notify.notified())
+            .await
+            .map_err(|_| {
+                tracing::warn!(
+                    model_id = %model_id,
+                    timeout_secs = timeout.as_secs(),
+                    "Cold start timed out"
+                );
+                crate::error::AppError::ColdStartTimeout
+            })
+    }
+
     /// Notify all waiters that `model_id` is now available.
     pub async fn notify_ready(&self, model_id: &str) {
         let mut queues = self.queues.lock().await;
@@ -79,6 +100,52 @@ impl ColdStartQueues {
             );
         }
     }
+
+    /// Check if a model has waiting requests
+    pub async fn has_waiters(&self, model_id: &str) -> bool {
+        let queues = self.queues.lock().await;
+        queues.get(model_id).map(|q| q.waiting > 0).unwrap_or(false)
+    }
+}
+
+/// Trigger KAI Scheduler to provision GPU for a model.
+/// This calls the KAI Scheduler API to allocate resources.
+/// Returns true if the trigger was successful.
+pub async fn trigger_kai_provision(
+    kai_url: &str,
+    model_id: &str,
+    gpu_count: u32,
+    gpu_type: &str,
+) -> Result<(), String> {
+    let client = reqwest::Client::builder()
+        .timeout(Duration::from_secs(10))
+        .build()
+        .map_err(|e| format!("Failed to build KAI HTTP client: {}", e))?;
+
+    let response = client
+        .post(format!("{}/api/v1/provision", kai_url.trim_end_matches('/')))
+        .json(&serde_json::json!({
+            "model_id": model_id,
+            "gpu_count": gpu_count,
+            "gpu_type": gpu_type,
+        }))
+        .send()
+        .await
+        .map_err(|e| format!("KAI provision request failed: {}", e))?;
+
+    if response.status().is_success() {
+        tracing::info!(
+            model_id = %model_id,
+            gpu_count = gpu_count,
+            gpu_type = gpu_type,
+            "KAI provision triggered"
+        );
+        Ok(())
+    } else {
+        let status = response.status();
+        let body = response.text().await.unwrap_or_default();
+        Err(format!("KAI provision failed: {} {}", status, body))
+    }
 }
 
 /// Global singleton for cold start queues.
@@ -94,7 +161,6 @@ mod tests {
         let queues = ColdStartQueues::new();
         let notify = queues.enqueue("test-model").await;
 
-        // Notify should wake the waiter
         let notify_clone = notify.clone();
         let handle = tokio::spawn(async move {
             notify_clone.notified().await;
@@ -115,13 +181,51 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_wait_for_ready_timeout() {
+        let queues = ColdStartQueues::new();
+        let result = queues
+            .wait_for_ready("test-model", Duration::from_millis(50))
+            .await;
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_wait_for_ready_notified() {
+        use std::sync::Arc;
+        let queues = Arc::new(ColdStartQueues::new());
+        let q = queues.clone();
+        let model = "test-model".to_string();
+
+        let handle = tokio::spawn(async move {
+            q.wait_for_ready(&model, Duration::from_secs(5)).await
+        });
+
+        tokio::time::sleep(Duration::from_millis(50)).await;
+        queues.notify_ready("test-model").await;
+
+        let result = tokio::time::timeout(Duration::from_secs(1), handle)
+            .await
+            .unwrap()
+            .unwrap();
+        assert!(result.is_ok());
+    }
+
+    #[tokio::test]
     async fn test_failed_cleans_up() {
         let queues = ColdStartQueues::new();
         let _notify = queues.enqueue("test-model").await;
         queues.notify_failed("test-model").await;
 
-        // Queue should be removed
         let inner = queues.queues.lock().await;
         assert!(inner.get("test-model").is_none());
+    }
+
+    #[tokio::test]
+    async fn test_has_waiters() {
+        let queues = ColdStartQueues::new();
+        assert!(!queues.has_waiters("test-model").await);
+        let _notify = queues.enqueue("test-model").await;
+        assert!(queues.has_waiters("test-model").await);
+        queues.notify_ready("test-model").await;
     }
 }

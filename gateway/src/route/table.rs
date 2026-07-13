@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::sync::Arc;
 use arc_swap::ArcSwap;
 use serde::Deserialize;
 
@@ -49,6 +50,71 @@ pub static ROUTE_TABLE: once_cell::sync::Lazy<ArcSwap<RouteTable>> =
             version: 0,
         })
     });
+
+/// Add or update a pod in the route table dynamically.
+/// Called when KAI Scheduler provisions a new GPU worker or during warmup.
+pub fn upsert_pod(model_id: &str, pool_name: &str, strategy: &str, pod_id: &str, pod_address: &str) {
+    let current = ROUTE_TABLE.load();
+    let mut routes = current.routes.clone();
+
+    let pool = routes.entry(model_id.to_string()).or_insert_with(|| Pool {
+        name: pool_name.to_string(),
+        strategy: strategy.to_string(),
+        pods: Vec::new(),
+    });
+
+    pool.name = pool_name.to_string();
+    pool.strategy = strategy.to_string();
+
+    if let Some(existing) = pool.pods.iter_mut().find(|p| p.id == pod_id) {
+        existing.address = pod_address.to_string();
+    } else {
+        pool.pods.push(Pod {
+            id: pod_id.to_string(),
+            address: pod_address.to_string(),
+            weight: 1,
+        });
+    }
+
+    let new_version = current.version + 1;
+    ROUTE_TABLE.store(Arc::new(RouteTable {
+        routes,
+        version: new_version,
+    }));
+
+    tracing::info!(
+        model_id = %model_id,
+        pod_id = %pod_id,
+        address = %pod_address,
+        version = new_version,
+        "Route table updated dynamically"
+    );
+}
+
+/// Remove a pod from the route table dynamically.
+pub fn remove_pod(model_id: &str, pod_id: &str) {
+    let current = ROUTE_TABLE.load();
+    let mut routes = current.routes.clone();
+
+    if let Some(pool) = routes.get_mut(model_id) {
+        pool.pods.retain(|p| p.id != pod_id);
+        if pool.pods.is_empty() {
+            routes.remove(model_id);
+        }
+    }
+
+    let new_version = current.version + 1;
+    ROUTE_TABLE.store(Arc::new(RouteTable {
+        routes,
+        version: new_version,
+    }));
+
+    tracing::info!(
+        model_id = %model_id,
+        pod_id = %pod_id,
+        "Pod removed from route table"
+    );
+}
 
 /// Load route table from JSON file. Called synchronously at startup.
 /// Panics if file is missing or invalid — Gateway cannot run without routes.

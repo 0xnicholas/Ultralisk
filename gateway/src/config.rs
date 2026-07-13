@@ -15,6 +15,10 @@ pub struct AppConfig {
     pub database_url: String,
     pub max_body_size: usize,
     pub shutdown_drain_secs: u64,
+    pub batch_window_secs: u64,
+    pub batch_max_requests: usize,
+    pub cold_start_timeout_secs: u64,
+    pub kai_scheduler_url: String,
 }
 
 impl AppConfig {
@@ -45,6 +49,11 @@ impl AppConfig {
             database_url: env::var("DATABASE_URL").unwrap_or_default(),
             max_body_size: parse_or("MAX_BODY_SIZE", 10 * 1024 * 1024usize),
             shutdown_drain_secs: parse_or("SHUTDOWN_DRAIN_SECS", 30),
+            batch_window_secs: parse_or("BATCH_WINDOW_SECS", 60u64),
+            batch_max_requests: parse_or("BATCH_MAX_REQUESTS", 100usize),
+            cold_start_timeout_secs: parse_or("COLD_START_TIMEOUT_SECS", 300u64),
+            kai_scheduler_url: env::var("KAI_SCHEDULER_URL")
+                .unwrap_or_else(|_| "http://localhost:9090".into()),
         }
     }
 }

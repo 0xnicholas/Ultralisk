@@ -4,6 +4,7 @@ mod types;
 mod db;
 mod handlers;
 mod auth;
+mod revocation;
 mod app;
 
 use config::AppConfig;

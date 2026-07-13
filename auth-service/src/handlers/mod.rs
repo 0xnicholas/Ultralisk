@@ -3,3 +3,4 @@ pub mod login;
 pub mod refresh;
 pub mod keys;
 pub mod me;
+pub mod revocation_version;

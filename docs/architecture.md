@@ -316,7 +316,7 @@ vLLM (vanilla)      →    vLLM fork + CUDA 优化  →    Zealot (自研引擎)
 | DeepSeek V4 Pro | H100-80GB x2 | FP8 | ~70GB | ~30-60 |
 | Qwen 2.5 72B | H100-80GB x1 | AWQ INT4 | ~38GB | ~40-80 |
 
-### 4.5 Zealot 语言栈：Python 做胶水，Rust 做内核，CUDA 做计算
+### 4.5 Zealot 语言栈：Python 做兼容，Rust 做内核，CUDA 做计算
 
 Zealot 不是全量重写 vLLM，而是**组件级替换**——保留 Python 兼容层，用 Rust 替换内存管理和约束解码，CUDA 不动。
 

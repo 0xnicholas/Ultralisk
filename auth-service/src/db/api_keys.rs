@@ -1,4 +1,5 @@
 use sqlx::PgPool;
+use sqlx::Row;
 use uuid::Uuid;
 use crate::types::ApiKey;
 use crate::error::AppError;
@@ -25,16 +26,20 @@ pub async fn create(
     .map_err(|e| AppError::Internal(format!("DB error: {}", e)))
 }
 
-pub async fn revoke(pool: &PgPool, key_id: &Uuid) -> Result<(), AppError> {
-    let rows = sqlx::query(
-        "UPDATE api_keys SET status = 'revoked', revoked_at = now() WHERE id = $1 AND status = 'active'"
+pub async fn revoke(pool: &PgPool, key_id: &Uuid) -> Result<String, AppError> {
+    let row = sqlx::query(
+        "UPDATE api_keys SET status = 'revoked', revoked_at = now() WHERE id = $1 AND status = 'active' RETURNING key_hash"
     )
-    .bind(key_id).execute(pool).await
+    .bind(key_id).fetch_optional(pool).await
     .map_err(|e| AppError::Internal(format!("DB error: {}", e)))?;
-    if rows.rows_affected() == 0 {
-        return Err(AppError::ApiKeyNotFound);
+
+    match row {
+        Some(r) => {
+            let hash: String = r.get("key_hash");
+            Ok(hash)
+        }
+        None => Err(AppError::ApiKeyNotFound),
     }
-    Ok(())
 }
 
 pub async fn update_last_used(pool: &PgPool, key_id: &Uuid) -> Result<(), AppError> {

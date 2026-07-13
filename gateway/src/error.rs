@@ -15,6 +15,10 @@ pub enum AppError {
     ModelNotFound(String),
     #[error("Model not available: {0}")]
     ModelNotAvailable(String),
+    #[error("Model cold starting")]
+    ColdStarting,
+    #[error("Cold start timed out")]
+    ColdStartTimeout,
     #[error("Upstream error: {0}")]
     UpstreamError(String),
     #[error("Upstream timeout")]
@@ -49,6 +53,12 @@ impl IntoResponse for AppError {
             AppError::ModelNotFound(_) => (StatusCode::NOT_FOUND, "model_not_found", None),
             AppError::ModelNotAvailable(_) => {
                 (StatusCode::SERVICE_UNAVAILABLE, "model_not_available", None)
+            }
+            AppError::ColdStarting => {
+                (StatusCode::ACCEPTED, "cold_starting", None)
+            }
+            AppError::ColdStartTimeout => {
+                (StatusCode::SERVICE_UNAVAILABLE, "cold_start_timeout", None)
             }
             AppError::UpstreamError(_) => (StatusCode::BAD_GATEWAY, "upstream_error", None),
             AppError::UpstreamTimeout => (StatusCode::GATEWAY_TIMEOUT, "upstream_timeout", None),

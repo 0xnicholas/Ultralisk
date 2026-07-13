@@ -11,6 +11,7 @@ use dashmap::DashMap;
 use metrics::counter;
 use redis::aio::MultiplexedConnection;
 use serde::Deserialize;
+use sha2::{Sha256, Digest};
 use tokio::sync::Notify;
 
 use crate::config::AppConfig;
@@ -20,6 +21,17 @@ use crate::types::AuthResult;
 const AUTH_HEADER: &str = "Authorization";
 const BEARER_PREFIX: &str = "Bearer ";
 const INTERNAL_HEADERS: &[&str] = &["x-user-id", "x-org-id", "x-api-key-id"];
+const CACHE_KEY_PREFIX: &str = "apikey_hash";
+
+fn hash_api_key(api_key: &str) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(api_key.as_bytes());
+    hex::encode(hasher.finalize())
+}
+
+fn cache_key(api_key: &str) -> String {
+    format!("{}:{}", CACHE_KEY_PREFIX, hash_api_key(api_key))
+}
 
 // --- Auth Service Response ---
 
@@ -131,7 +143,7 @@ async fn get_cached_auth(
     redis: &MultiplexedConnection,
     api_key: &str,
 ) -> Result<Option<AuthResult>, AppError> {
-    let key = format!("apikey:{}", api_key);
+    let key = cache_key(api_key);
     let mut conn = redis.clone();
     let result: Option<String> = redis::cmd("GET")
         .arg(&key)
@@ -166,7 +178,7 @@ async fn cache_auth_result(
     result: &AuthResult,
     ttl_secs: u64,
 ) -> Result<(), AppError> {
-    let key = format!("apikey:{}", api_key);
+    let key = cache_key(api_key);
     let json = serde_json::json!({
         "user_id": result.user_id,
         "org_id": result.org_id,
@@ -189,7 +201,7 @@ async fn cache_negative(
     api_key: &str,
     ttl_secs: u64,
 ) -> Result<(), AppError> {
-    let key = format!("apikey:{}", api_key);
+    let key = cache_key(api_key);
     let mut conn = redis.clone();
     redis::cmd("SETEX")
         .arg(&key)
