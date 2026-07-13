@@ -93,14 +93,22 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
             auth::authenticate,
         ));
 
-    // Admin
-    let admin_router = Router::new()
+    // Admin — public routes (login/logout, no auth)
+    let admin_public = Router::new()
+        .route("/v1/admin/auth/login", post(admin_handler))
+        .route("/v1/admin/auth/logout", post(admin_handler))
+        .with_state(app_state.clone());
+
+    // Admin — protected routes (all other /v1/admin/* require auth)
+    let admin_protected = Router::new()
         .route("/v1/admin/{*path}", any(admin_handler))
         .with_state(app_state.clone())
         .route_layer(middleware::from_fn_with_state(
             auth_state,
             auth::authenticate,
         ));
+
+    let admin_router = admin_public.merge(admin_protected);
 
     // Health + metrics (no auth)
     let infra_router = Router::new()
