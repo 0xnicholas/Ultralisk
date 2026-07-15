@@ -3,6 +3,8 @@ use std::env;
 #[derive(Clone, Debug)]
 pub struct AppConfig {
     pub gateway_port: u16,
+    pub batch_internal_port: u16,
+    pub batch_instance_id: String,
     pub redis_url: String,
     pub auth_service_url: String,
     pub console_api_url: String,
@@ -29,8 +31,19 @@ impl AppConfig {
                 .unwrap_or(default)
         }
 
+        let gateway_port = parse_or("GATEWAY_PORT", 8080u16);
+        let batch_internal_port = parse_or("BATCH_INTERNAL_PORT", 8081u16);
+        let batch_instance_id = env::var("BATCH_INSTANCE_ID").unwrap_or_else(|_| {
+            let host = hostname::get()
+                .map(|h| h.to_string_lossy().into_owned())
+                .unwrap_or_else(|_| "unknown".into());
+            format!("{}:{}", host, gateway_port)
+        });
+
         Self {
-            gateway_port: parse_or("GATEWAY_PORT", 8080u16),
+            gateway_port,
+            batch_internal_port,
+            batch_instance_id,
             redis_url: env::var("REDIS_URL")
                 .unwrap_or_else(|_| "redis://localhost:6379".into()),
             auth_service_url: env::var("AUTH_SERVICE_URL")

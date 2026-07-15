@@ -36,12 +36,37 @@ pub fn resolve(model_id: &str) -> Result<RouteInfo, (axum::http::StatusCode, &'s
 }
 
 fn select_pod(pool: &Pool) -> &Pod {
+    // Weighted round-robin: if all weights are equal, fast-path to simple RR.
+    let all_equal = pool.pods.windows(2).all(|w| w[0].weight == w[1].weight);
+
+    if all_equal {
+        let counter = RR_COUNTERS
+            .entry(pool.name.clone())
+            .or_insert_with(|| AtomicU64::new(0));
+        let idx = counter.fetch_add(1, Ordering::Relaxed) as usize % pool.pods.len();
+        return &pool.pods[idx];
+    }
+
+    // Weighted selection: accumulate weights, compute index
+    let total_weight: u32 = pool.pods.iter().map(|p| p.weight).sum();
+    if total_weight == 0 {
+        return &pool.pods[0];
+    }
+
     let counter = RR_COUNTERS
         .entry(pool.name.clone())
         .or_insert_with(|| AtomicU64::new(0));
+    let pos = (counter.fetch_add(1, Ordering::Relaxed) as u32) % total_weight;
 
-    let idx = counter.fetch_add(1, Ordering::Relaxed) as usize % pool.pods.len();
-    &pool.pods[idx]
+    let mut cumulative = 0u32;
+    for pod in &pool.pods {
+        cumulative += pod.weight;
+        if pos < cumulative {
+            return pod;
+        }
+    }
+
+    &pool.pods[0]
 }
 
 #[cfg(test)]

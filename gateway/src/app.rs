@@ -71,10 +71,10 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
     };
 
     let batch_aggregator = BatchAggregator::new(
-        config.batch_window_secs,
-        config.batch_max_requests,
+        &config,
         proxy_state.clone(),
         pg_pool.clone(),
+        redis_conn.clone(),
     );
 
     let app_state = AppState {
@@ -117,9 +117,10 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
 
     let admin_router = admin_public.merge(admin_protected);
 
-    // Internal endpoints (no auth — for KAI Scheduler callbacks)
+    // Internal endpoints (no auth — for KAI Scheduler callbacks and batch forwarding)
     let internal_router = Router::new()
         .route("/v1/internal/models/{model_id}/ready", post(model_ready_handler))
+        .route("/v1/internal/batch/enqueue", post(internal_batch_handler))
         .with_state(app_state.clone());
 
     let infra_router = Router::new()
@@ -318,6 +319,14 @@ async fn model_ready_handler(
 }
 
 // --- Warmup handler ---
+
+/// Internal handler for cross-instance batch request forwarding.
+async fn internal_batch_handler(
+    State(state): State<AppState>,
+    Json(body): Json<serde_json::Value>,
+) -> Result<impl IntoResponse, AppError> {
+    state.batch_aggregator.handle_internal_enqueue(body).await
+}
 
 /// Admin endpoint to pre-warm a model. Triggers KAI Scheduler to provision GPU.
 /// Returns 202 (Accepted) — the caller should poll until the model is ready.
