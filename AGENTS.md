@@ -34,9 +34,12 @@ Read `docs/adr/000-platform-object-model.md` first — all architecture decision
 
 ```
 console/                     ← Self-contained monorepo (pnpm workspace)
-  ├── console-api/           ← Express mock API (TypeScript, port 3100)
-  │     src/index.ts         ← All 18 route groups, pure fixtures
-  │     src/fixtures.ts      ← Mock data for models, users, billing, etc.
+  ├── console-api/           ← Express API (TypeScript, port 3100, PostgreSQL-backed)
+  │     src/index.ts         ← Route wiring + remaining mock routes (invitations, gpu-utilization, cost-analytics)
+  │     src/routes/          ← 17 route modules (auth, apiKeys, models, billing, clusters, deployments, ...)
+  │     src/db/migrate.ts    ← Runs drizzle/*.sql migrations on startup
+  │     drizzle/             ← SQL migrations 001-004 (Phase 1 + Phase 2 tables)
+  │     src/fixtures.ts      ← Mock data for the remaining mock routes only
   ├── console-ui/            ← React SPA (TypeScript, Vite, Mantine v9)
   │     src/App.tsx          ← React Router v7 routes
   │     src/api/             ← API client modules (auto-generated from mock)
@@ -67,6 +70,27 @@ docs/                        ← Architecture documentation (root level)
   ├── ENGINEERING_ROADMAP.md ← Engineering milestones (monthly, per-workstream)
   └── superpowers/           ← Historical planning docs
 
+gateway/                     ← Rust API gateway (default port 8080)
+  ├── src/                   ← middleware/ (auth, rate_limit), extract/, proxy/ (SSE), route/, batch.rs, cold_start.rs
+  ├── config/route_table.json← model → Pool routing table (weight field for A/B)
+  └── tests/                 ← Integration suite (chat, admin, auth, rate limit, route); skips when PG/Redis absent
+
+auth-service/                ← Rust auth service (default port 3101)
+  └── src/                   ← login/refresh/keys/validate_key, revocation Pub/Sub
+
+proto/                       ← Runtime Interface 契约（ADR-010），Gateway + 各 Backend Runtime 共用
+  └── runtime/v1/runtime.proto
+
+zealot/                      ← Self-built inference engine (standalone, Rust core + PyO3 bindings — no vLLM fork)
+  ├── src/block_manager.rs   ← KV cache block management
+  ├── src/constrained_decode/← JSON schema → DFA constrained decoding
+  ├── src/scheduler.rs        ← Continuous-batching scheduler (priority queue + block budget + OOM preemption)
+  ├── src/engine.rs           ← Engine step loop + ModelRunner trait
+  ├── src/model_runner_py.rs  ← PyModelRunner: PyO3-embedded torch CPU forward (dev-mode)
+  ├── src/bin/zealot-backend.rs ← Runtime Interface gRPC server, Engine actor (:9091)
+  ├── build.rs               ← tonic-build for ../proto (vendored protoc)
+  └── docs/architecture.md   ← Engine design doc
+
 .gitignore                   ← Root-level, also covers console/ paths
 ```
 
@@ -76,10 +100,11 @@ docs/                        ← Architecture documentation (root level)
 
 | Layer | Tech | Notes |
 |-------|------|-------|
-| Gateway | **Rust** (planned) | Self-built. `tower` middleware, body-based routing. NOT Kong. |
-| Console API | **TypeScript + Express 5** | Currently mock-only. Real DB in Phase 2. |
+| Gateway | **Rust** (`gateway/`) | Implemented. `tower` middleware, body-based routing. NOT Kong. |
+| Auth Service | **Rust** (`auth-service/`) | Login/JWT/API keys, key revocation via Pub/Sub |
+| Console API | **TypeScript + Express 5** | PostgreSQL-backed (drizzle SQL migrations). Invitations/gpu-utilization/cost-analytics still mock. |
 | Console UI | **React 19 + TypeScript + Mantine v9** | Vite dev server proxies to :3100 |
-| Inference | **vLLM** (Phase 1) → **Zealot** (Rust+CUDA, Phase 2+) | Fork vLLM, replace attention kernel + scheduler |
+| Inference | **vLLM** (Phase 1) → **Zealot** (Rust+CUDA, Phase 2+) | Zealot is standalone (no fork); Block Manager / Constrained Decode / Scheduler replaced in Rust |
 | Container | **Kubernetes + KAI Scheduler** | GPU-aware Pod scheduling |
 | DB | **PostgreSQL + Redis + ClickHouse + Loki + S3** | Domain-driven: Control/Cache/Telemetry/Artifact. Model weights/LoRA go to S3, not Postgres. |
 | Build | **pnpm + Turborepo** | Workspace root: `console/` |
@@ -102,13 +127,27 @@ docs/                        ← Architecture documentation (root level)
 
 ### Running locally
 ```bash
+# Console (API + UI)
 cd console
 pnpm install
 pnpm dev          # Starts both console-api (:3100) and console-ui (:5173)
+                  # console-api needs PostgreSQL; migrations auto-run on startup
+
+# Rust crates (independent cargo projects, test per crate)
+cd gateway && cargo test       # integration tests skip gracefully without PG/Redis
+cd auth-service && cargo test
+cd zealot && cargo test        # unit + gRPC e2e; needs python3.12 on PATH (pinned via zealot/.cargo/config.toml)
+cd zealot && cargo run --bin zealot-backend   # Runtime Interface gRPC server on :9091
+# real-inference CPU e2e (needs zealot/.venv per zealot/README.md; skips if unset):
+cd zealot && ZEALOT_E2E_MODEL=hf-internal-testing/tiny-random-gpt2 \
+  ZEALOT_SITE_PACKAGES="$PWD/.venv/lib/python3.12/site-packages" \
+  HF_ENDPOINT=https://hf-mirror.com cargo test --test cpu_infer_e2e
 ```
 
 ### Where to make changes
-- **Add API endpoint**: `console/console-api/src/index.ts` (add route) + `fixtures.ts` (add mock data)
+- **Add API endpoint**: new module in `console/console-api/src/routes/` + wire in `src/index.ts` + SQL migration in `console/console-api/drizzle/`. `fixtures.ts` is only for the remaining mock routes.
+- **Gateway change**: `gateway/src/` (middleware chain assembled in `app.rs`); routing behavior via `gateway/config/route_table.json`; integration tests in `gateway/tests/`
+- **Zealot change**: `zealot/src/`; keep `zealot/README.md` + `zealot/docs/architecture.md` in sync
 - **Add UI page**: `console/console-ui/src/pages/` (page component) + `src/App.tsx` (route) + `src/components/Sidebar.tsx` (nav item)
 - **Architecture decision**: New file in `docs/adr/` following the ADR template. Update `docs/architecture.md` §10 decision record. Update roadmap if timeline affected.
 - **Update roadmap**: `docs/ENGINEERING_ROADMAP.md` (engineering milestones). Sync `docs/roadmap.md` (product milestones) if needed.
@@ -136,11 +175,11 @@ Every ADR must reference `ADR-000 (Platform Object Model)` in its dependencies.
 
 ---
 
-## Current State (Phase 1a Mock)
+## Current State (Phase 1 code complete, Phase 2 M4 landed)
 
-- **Console API**: All endpoints return mock data from `fixtures.ts`. No real auth, no real DB.
-- **Console UI**: Phase 1a and 1b pages exist (Dashboard, Models, Playground, API Keys, Endpoints, Batch Jobs, Billing). Connected to mock API via Vite proxy.
-- **Gateway**: Not implemented. Vite dev proxy stands in (`/v1/admin` → `:3100`, `/v1/chat` → `:3100`).
-- **Engine**: Not deployed. Mock chat completions endpoint returns SSE stub text.
-
-**What's real**: Console UI code. **What's mock**: Everything else.
+- **Gateway**: Phase 1 complete — auth, body-based routing, Lua-atomic rate limit, SSE streaming proxy, batch aggregation, cold-start queue, graceful shutdown, Prometheus metrics. M4: multi-instance batch coordination (Redis SETNX lease + cross-instance forwarding), weighted pod selection. `cargo test`: 28/28 pass.
+- **Auth Service**: Complete — login/refresh/keys/validate_key/me, revocation via Pub/Sub + revocation_version fallback. 8/8 tests pass.
+- **Console API**: Real PostgreSQL (migrations 001-004, incl. Phase 2 tables: clusters, nodes, gpu_cards, deployments, incidents, alerts). Reserved strategy live (`tps_guarantee` + `priority` on endpoints). Usage aggregation cron (T-2) runs on startup. Still mock: invitations, gpu-utilization, cost-analytics (await ClickHouse/Prometheus).
+- **Console UI**: 15 pages — Phase 1a/1b plus Phase 2 (Clusters, Nodes, Deployments, Incidents, GPU Utilization, Cost Analytics). Served via Vite proxy to :3100.
+- **Zealot**: P1 components done — Block Manager (generation-gated handles) + Constrained Decode (JSON schema → DFA). Scheduler landed: priority queue, block budget via BlockManager, admission control, OOM preemption (recompute). `zealot-backend` is a real Runtime Interface server (`proto/runtime/v1/runtime.proto`, ADR-010) running an Engine actor over a `ModelRunner` trait; dev-mode `PyModelRunner` (PyO3-embedded torch CPU forward, Python in decode loop — temporary until GPU kernels land) serves real inference end-to-end. 26/26 unit + 2/2 backend e2e + 1/1 real-model CPU e2e pass. CUDA kernels, Batch, sampling params still open.
+- **Not deployed**: no real GPU, no vLLM, no K8s/KAI cluster. Inference behind the Gateway is still stubbed; Phase 1 acceptance metrics (P99 < 2s, revocation < 100ms, GPU util > 30%) are unverified.

@@ -19,4 +19,5 @@ screenshots/
 # Turbo cache
 .turbo/
 auth-service/target/
+zealot/target/
 .pi-subagents/
