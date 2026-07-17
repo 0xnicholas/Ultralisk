@@ -58,29 +58,35 @@ export function LoginPage() {
               Sign in
             </Button>
 
-            <Divider label="Development" labelPosition="center" />
-
-            <Button
-              variant="outline"
-              color="gray"
-              fullWidth
-              loading={loading}
-              leftSection={<IconBug size={16} />}
-              onClick={async () => {
-                setError('');
-                setLoading(true);
-                try {
-                  await login('dev@ultralisk.com', 'dev-password');
-                  navigate('/dashboard', { replace: true });
-                } catch (err) {
-                  setError(err instanceof Error ? err.message : 'Login failed');
-                } finally {
-                  setLoading(false);
-                }
-              }}
-            >
-              Dev Login (skip)
-            </Button>
+            {/* Dev Login is only rendered in vite dev. In production builds
+                it would 503 (NODE_ENV=production disables the dev-login
+                path server-side), so hide the button outright. */}
+            {import.meta.env.DEV && (
+              <>
+                <Divider label="Development" labelPosition="center" />
+                <Button
+                  variant="outline"
+                  color="gray"
+                  fullWidth
+                  loading={loading}
+                  leftSection={<IconBug size={16} />}
+                  onClick={async () => {
+                    setError('');
+                    setLoading(true);
+                    try {
+                      await login('dev@ultralisk.com', 'dev-password');
+                      navigate('/dashboard', { replace: true });
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : 'Login failed');
+                    } finally {
+                      setLoading(false);
+                    }
+                  }}
+                >
+                  Dev Login (skip)
+                </Button>
+              </>
+            )}
           </Stack>
         </form>
       </Paper>
