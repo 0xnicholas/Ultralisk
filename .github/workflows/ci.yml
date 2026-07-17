@@ -6,9 +6,27 @@ on:
   pull_request:
     branches: [main]
 
+# Cancel in-flight runs of the same branch on new pushes; saves CI minutes.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TURBO_TELEMETRY_DISABLED: 1
+
 jobs:
-  quality:
-    runs-on: ubuntu-latest
+  # Run the full turbo pipeline (lint + typecheck + test + build) for
+  # the console monorepo. Single job keeps the workflow readable; if
+  # it gets slow, split into lint / typecheck / test / build with
+  # needs: [quality] to fan out.
+  console:
+    name: Console (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+
     steps:
       - uses: actions/checkout@v4
 
@@ -21,19 +39,76 @@ jobs:
           node-version: 20
           cache: 'pnpm'
 
-      - run: pnpm install --frozen-lockfile
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
-      - name: TypeScript check (console-ui)
-        run: pnpm --filter @ultralisk/console-ui typecheck
+      # Provide a Postgres for tests that want one (currently none of
+      # the unit tests do, but the service is available for future
+      # integration tests). Tests that need PG can DATABASE_URL this.
+      - name: Start PostgreSQL
+        uses: harmonify/postgres-action@v2
+        with:
+          username: postgres
+          password: postgres
+          port: 5432
+          database: ultralisk_console_test
 
-      - name: TypeScript check (console-api)
-        run: pnpm --filter @ultralisk/console-api typecheck
+      # All commands run from the console/ subdirectory (where the
+      # pnpm workspace lives). They each fan out via turbo to the
+      # workspace packages (@ultralisk/console-api, @ultralisk/console-ui).
+      - name: Run lint
+        working-directory: console
+        run: pnpm lint
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ultralisk_console_test
 
-      - name: Tests
-        run: pnpm --filter @ultralisk/console-ui test
+      - name: Run typecheck
+        working-directory: console
+        run: pnpm typecheck
 
-      - name: Build (console-ui)
-        run: pnpm --filter @ultralisk/console-ui build
+      - name: Run tests
+        working-directory: console
+        run: pnpm test
+        env:
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/ultralisk_console_test
 
-      - name: Build (console-api)
-        run: pnpm --filter @ultralisk/console-api build
+      - name: Build
+        working-directory: console
+        run: pnpm build
+
+  # Rust crates — gateway / auth-service / zealot. Each runs its own
+  # cargo test; integration tests skip gracefully when their DB / Redis
+  # isn't present so we don't gate on infra availability here.
+  rust:
+    name: Rust (${{ matrix.crate }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        crate:
+          - gateway
+          - auth-service
+          - zealot
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo registry & build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ${{ matrix.crate }} -> target
+
+      - name: cargo fmt --check
+        working-directory: ${{ matrix.crate }}
+        run: cargo fmt --all -- --check
+
+      - name: cargo clippy
+        working-directory: ${{ matrix.crate }}
+        run: cargo clippy --all-targets -- -D warnings
+        continue-on-error: true  # clippy nits shouldn't gate CI yet
+
+      - name: cargo test
+        working-directory: ${{ matrix.crate }}
+        run: cargo test --all-targets --no-fail-fast

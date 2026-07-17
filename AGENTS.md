@@ -131,6 +131,13 @@ zealot/                      ← Self-built inference engine (standalone, Rust c
 
 ## Working With This Codebase
 
+### CI
+
+`.github/workflows/ci.yml` runs on every PR and push to main:
+
+- **console job** — `pnpm lint && pnpm typecheck && pnpm test && pnpm build` from `console/`. Spins up a Postgres (`harmonify/postgres-action@v2`) for any tests that need it; pure-function tests don't.
+- **rust matrix** — `cargo fmt --check`, `cargo clippy` (non-blocking), `cargo test` for `gateway` / `auth-service` / `zealot` in parallel. Caches each crate's `target/` separately.
+
 ### Running locally
 ```bash
 # Console (API + UI)
@@ -148,6 +155,9 @@ bash console/scripts/dev.sh restart  # stop + start
 bash console/scripts/dev.sh clean    # nuclear: kill zombies, free :3100 & :5173
 # Logs: /tmp/ultralisk-api.log, /tmp/ultralisk-ui.log
 # Pids: /tmp/ultralisk-api.pid, /tmp/ultralisk-ui.pid
+
+# Quality gates (run before pushing):
+cd console && pnpm lint && pnpm typecheck && pnpm test
 
 # Rust crates (independent cargo projects, test per crate)
 cd gateway && cargo test       # integration tests skip gracefully without PG/Redis
