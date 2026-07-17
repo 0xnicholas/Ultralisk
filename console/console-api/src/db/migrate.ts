@@ -1,4 +1,5 @@
 import pool from '../db/index.js';
+import { logger } from '../logger.js';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -115,7 +116,7 @@ async function runMigration(version: string, label: string, path: string): Promi
     }
     await client.query('INSERT INTO schema_migrations (version) VALUES ($1)', [version]);
     await client.query('COMMIT');
-    console.log(`[console-api] migration ${version} (${label}) applied`);
+    logger.info({ version, label }, 'migration applied');
   } catch (err) {
     await client.query('ROLLBACK');
     throw err;

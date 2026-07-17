@@ -1,4 +1,5 @@
 import pool from '../db/index.js';
+import { logger } from '../logger.js';
 
 export interface AuditLogEntry {
   org_id: string;
@@ -30,7 +31,7 @@ export async function writeAuditLog(entry: AuditLogEntry): Promise<void> {
       ]
     );
   } catch (err) {
-    console.error('Failed to write audit log:', err);
+    logger.error({ err }, 'audit log write failed');
   }
 }
 

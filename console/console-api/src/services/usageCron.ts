@@ -1,4 +1,5 @@
 import pool from '../db/index.js';
+import { logger } from '../logger.js';
 
 // ADR-006 / Phase 1 M2: T-2 aggregation window.
 // Runs hourly, aggregates raw_usage_events from the hour-before-last
@@ -45,7 +46,7 @@ export async function aggregateUsage(): Promise<void> {
       [startIso, endIso]
     );
     if (existing.length > 0) {
-      console.log(`Usage aggregation window ${startIso}-${endIso} already processed, skipping`);
+      logger.debug({ window: `${startIso}-${endIso}` }, 'usage aggregation already processed');
       await client.query('COMMIT');
       return;
     }
@@ -94,10 +95,10 @@ export async function aggregateUsage(): Promise<void> {
     );
 
     await client.query('COMMIT');
-    console.log(`Usage aggregation T-2 [${startIso}, ${endIso}) done: ${rowsAgg} rows`);
+    logger.info({ window: `[${startIso}, ${endIso})`, rows: rowsAgg }, 'usage aggregation done');
   } catch (err) {
     await client.query('ROLLBACK');
-    console.error('Usage aggregation failed:', err);
+    logger.error({ err }, 'usage aggregation failed');
   } finally {
     client.release();
   }
@@ -110,11 +111,11 @@ export function startUsageCron(): void {
   cronStarted = true;
 
   // Run on startup (slight delay to let DB pool warm up)
-  setTimeout(() => aggregateUsage().catch(console.error), 5000);
+  setTimeout(() => aggregateUsage().catch((err) => logger.error({ err }, 'cron start failed')), 5000);
 
   // Run every hour. Multiple console-api instances (e.g. during tsx restarts)
   // are deduped via the PG advisory lock inside aggregateUsage().
-  const timer = setInterval(() => aggregateUsage().catch(console.error), 3600000);
+  const timer = setInterval(() => aggregateUsage().catch((err) => logger.error({ err }, 'cron tick failed')), 3600000);
   timer.unref();
 
   // Release the lock on shutdown so a fresh process can take over immediately.

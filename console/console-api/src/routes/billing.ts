@@ -67,7 +67,7 @@ router.get('/billing', async (req: Request, res: Response) => {
       },
     });
   } catch (err) {
-    console.error('billing route error', err);
+    req.log.error({ err }, 'billing route failed');
     res.status(500).json({ error: { code: 'internal_error', message: 'Internal server error' } });
   }
 });

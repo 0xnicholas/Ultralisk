@@ -37,16 +37,20 @@ import apiKeyRoutes from './routes/apiKeys.js';
 import billingRoutes from './routes/billing.js';
 
 import { migrate } from './db/migrate.js';
+import pool from './db/index.js';
 import { startUsageCron } from './services/usageCron.js';
 import { auditMiddleware } from './services/auditLog.js';
 import { authMiddleware } from './middleware/auth.js';
+import { requestIdMiddleware } from './middleware/requestId.js';
+import { logger } from './logger.js';
 
 const app = express();
+app.use(requestIdMiddleware); // before everything so every log line carries req_id
 app.use(cors());
 app.use(express.json());
 
 // Run all migrations on startup
-migrate().catch(console.error);
+migrate().catch((err) => logger.error({ err }, 'migrate failed at boot'));
 startUsageCron();
 
 // Audit logging middleware (logs mutating requests)
@@ -126,26 +130,28 @@ const PORT = Number(process.env.PORT) || 3100;
 const HOST = process.env.HOST || '0.0.0.0';
 
 const server = app.listen(PORT, HOST, () => {
-  console.log(`Ultralisk Console API running on http://localhost:${PORT} (mode: ${DEPLOYMENT_MODE})`);
+  logger.info({ port: PORT, mode: DEPLOYMENT_MODE }, 'Ultralisk Console API listening');
 });
 
 server.on('error', (err: NodeJS.ErrnoException) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(
-      `[console-api] Port ${PORT} already in use. ` +
-      `A previous dev process is still bound to it. ` +
-      `Run \`console/scripts/dev-clean.sh\` to clear zombies, then retry.`
+    logger.error(
+      { port: PORT, pid: process.pid },
+      'Port ' + PORT + ' already in use. A previous dev process is still bound to it. Run console/scripts/dev-clean.sh to clear zombies.'
     );
     process.exit(0); // exit cleanly so tsx watch can retry
   } else {
-    console.error('[console-api] listen error:', err);
+    logger.error({ err }, 'listen error');
     process.exit(1);
   }
 });
 
-function shutdown(signal: string) {
-  console.log(`[console-api] ${signal} received, shutting down`);
-  server.close(() => process.exit(0));
+async function shutdown(signal: string) {
+  logger.info({ signal }, 'shutting down');
+  server.close(async () => {
+    try { await pool.end(); } catch (err) { logger.error({ err }, 'pool.end failed during shutdown'); }
+    process.exit(0);
+  });
   setTimeout(() => process.exit(1), 5000).unref();
 }
 process.on('SIGINT', () => shutdown('SIGINT'));

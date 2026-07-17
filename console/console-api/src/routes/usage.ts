@@ -115,7 +115,7 @@ router.get('/usage', async (req: Request, res: Response) => {
       },
     });
   } catch (err) {
-    console.error('usage route error', err);
+    req.log.error({ err }, 'usage route failed');
     res.status(500).json({ error: { code: 'internal_error', message: 'Internal server error' } });
   }
 });
