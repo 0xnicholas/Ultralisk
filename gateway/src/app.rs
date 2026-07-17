@@ -51,6 +51,9 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
     ROUTE_TABLE.store(Arc::new(rt));
     tracing::info!("Route table loaded from {}", config.route_table_path);
 
+    // Start file watcher for hot-reload
+    let _watcher_shutdown = crate::route::watcher::start_watcher(config.route_table_path.clone());
+
     let auth_state = AuthState::new(&config, redis_conn.clone());
     let proxy_state = ProxyState::new(config.upstream_timeout_secs);
     let admin_proxy_state = AdminProxyState::new(&config);
