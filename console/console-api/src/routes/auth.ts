@@ -9,6 +9,13 @@ const router = Router();
 const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
 const IS_PROD = process.env.NODE_ENV === 'production';
 
+// devLogin() mints a JWT directly using the local JWT_SECRET, bypassing
+// auth-service entirely. Convenient for local dev but a real security risk
+// in production: a misconfigured deployment where auth-service is
+// unreachable would silently issue admin JWTs to anyone. Gated behind
+// NODE_ENV !== 'production' AND an explicit opt-in.
+const ALLOW_DEV_LOGIN = !IS_PROD && process.env.ALLOW_DEV_LOGIN !== 'false';
+
 function normalizeAuthResponse(raw: any) {
   const u = raw?.user ?? {};
   const org = u.org ?? null;
@@ -83,13 +90,19 @@ router.post('/auth/login', async (req: Request, res: Response) => {
   const isDevCredentials = email.startsWith('dev@') || email.endsWith('@ultralisk.dev');
   let raw: any;
   try {
-    if (isDevCredentials && !IS_PROD) {
+    if (isDevCredentials && ALLOW_DEV_LOGIN) {
       raw = await devLogin(email, password);
     } else if (await pingAuthService()) {
       raw = await authServiceLogin(email, password);
-    } else {
-      // Auth service unavailable and not a dev credential — fall back to dev so the console stays usable.
+    } else if (isDevCredentials && ALLOW_DEV_LOGIN) {
+      // Auth-service down + dev credential + dev mode -> still log in so
+      // the dev loop is unbroken. NOT taken when NODE_ENV=production.
       raw = await devLogin(email, password);
+    } else {
+      req.log?.error({ email, isDevCredentials }, 'login: auth-service unreachable');
+      return res.status(503).json({
+        error: { code: 'auth_service_unavailable', message: 'Auth service is unreachable. Please try again shortly.' },
+      });
     }
   } catch (err: any) {
     return res.status(err.status || 500).json({ error: { code: 'auth_error', message: err.message || 'Login failed' } });

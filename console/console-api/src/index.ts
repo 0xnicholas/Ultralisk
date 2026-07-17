@@ -6,6 +6,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEPLOYMENT_MODE = (process.env.DEPLOYMENT_MODE || 'saas') as 'saas' | 'private';
+const IS_PROD = process.env.NODE_ENV === 'production';
 
 // Shared route modules
 import authRoutes from './routes/auth.js';
@@ -46,7 +47,22 @@ import { logger } from './logger.js';
 
 const app = express();
 app.use(requestIdMiddleware); // before everything so every log line carries req_id
-app.use(cors());
+// CORS: permissive by default (dev / vite proxy). In production, set
+// CORS_ORIGINS=https://console.example.com,https://admin.example.com
+// (comma-separated). Empty value in prod = same-origin only.
+const CORS_ORIGINS = process.env.CORS_ORIGINS;
+if (IS_PROD && CORS_ORIGINS !== undefined) {
+  const origins = CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
+  app.use(cors({
+    origin: origins.length === 0 ? false : origins,
+    credentials: true,
+  }));
+} else if (!IS_PROD) {
+  app.use(cors({ origin: true, credentials: true }));
+} else {
+  // prod + CORS_ORIGINS unset: same-origin only
+  app.use(cors({ origin: false, credentials: true }));
+}
 app.use(express.json());
 
 // Run all migrations on startup
