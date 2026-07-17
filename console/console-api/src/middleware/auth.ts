@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'dev-secret-change-in-production';
+function getSecret(): string {
+  return process.env.JWT_SECRET || 'dev-secret-change-in-production';
+}
 
 interface Claims {
   sub: string;
@@ -17,6 +19,13 @@ function extractToken(req: Request): string | null {
   }
   const cookieToken = (req as any).cookies?.jwt;
   if (cookieToken) return cookieToken;
+  // Fall back to parsing the raw Cookie header so we don't need
+  // cookie-parser middleware just for this single field.
+  const rawCookie = req.headers['cookie'];
+  if (rawCookie) {
+    const match = rawCookie.match(/(?:^|;\s*)jwt=([^;]+)/);
+    if (match) return decodeURIComponent(match[1]);
+  }
   return null;
 }
 
@@ -28,7 +37,7 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
   }
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as Claims;
+    const decoded = jwt.verify(token, getSecret()) as Claims;
     if (!decoded.sub || !decoded.org_id) {
       res.status(401).json({ error: { code: 'unauthorized', message: 'Invalid token claims' } });
       return;
