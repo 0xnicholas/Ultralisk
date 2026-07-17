@@ -11,7 +11,8 @@ export function DeploymentDetailPage() {
   const { data: dep, isLoading } = useDeployment(id ?? '');
   const scaleMutation = useScaleDeployment(); const rollbackMutation = useRollbackDeployment();
   const [replicas, setReplicas] = useState(1);
-  // Sync replicas from API data when loaded
+  // Sync local input with API value when the deployment loads / changes.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => { if (dep?.replicas !== undefined) { setReplicas(dep.replicas); } }, [dep?.replicas]);
 
   if (isLoading) return <Skeleton height={400} />;

@@ -8,9 +8,11 @@ import { AreaChart } from '@mantine/charts';
 export function NodeDetailPage() {
   const { nodeId, clusterId } = useParams<{ nodeId: string; clusterId?: string }>();
   const navigate = useNavigate();
-  const { data: node, isLoading } = clusterId
-    ? useClusterNode(clusterId!, nodeId!)
-    : useNode(nodeId!);
+  // Always call both hooks (React rules-of-hooks); each is `enabled`-gated.
+  // Pick whichever query actually fired.
+  const nodeScoped = useNode(nodeId ?? '');
+  const clusterScoped = useClusterNode(clusterId ?? '', nodeId ?? '');
+  const { data: node, isLoading } = clusterId ? clusterScoped : nodeScoped;
 
   if (isLoading) return <Skeleton height={400} />;
   if (!node) return <Text c="red">Node not found</Text>;
