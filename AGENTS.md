@@ -147,12 +147,12 @@ pnpm dev          # Starts both console-api (:3100) and console-ui (:5173)
                   # console-api needs PostgreSQL; migrations auto-run on startup
 
 # Or use the lifecycle scripts (background mode, with logging to /tmp/):
-bash console/scripts/dev.sh start    # launch api+ui
-bash console/scripts/dev.sh status   # check ports / pids
-bash console/scripts/dev.sh logs     # tail api+ui logs (Ctrl-C to stop)
-bash console/scripts/dev.sh stop     # SIGTERM → SIGKILL after grace period
-bash console/scripts/dev.sh restart  # stop + start
-bash console/scripts/dev.sh clean    # nuclear: kill zombies, free :3100 & :5173
+bash scripts/dev.sh start    # launch api+ui
+bash scripts/dev.sh status   # check ports / pids
+bash scripts/dev.sh logs     # tail api+ui logs (Ctrl-C to stop)
+bash scripts/dev.sh stop     # SIGTERM → SIGKILL after grace period
+bash scripts/dev.sh restart  # stop + start
+bash scripts/dev.sh clean    # nuclear: kill zombies, free :3100 & :5173
 # Logs: /tmp/ultralisk-api.log, /tmp/ultralisk-ui.log
 # Pids: /tmp/ultralisk-api.pid, /tmp/ultralisk-ui.pid
 

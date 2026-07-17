@@ -17,12 +17,12 @@ for the full SaaS / Private split.
 
 ```bash
 pnpm install
-bash scripts/dev.sh start      # api + ui in background; logs in /tmp/
-bash scripts/dev.sh status     # check ports / pids
-bash scripts/dev.sh logs       # tail both logs (Ctrl-C to stop tailing)
-bash scripts/dev.sh stop       # SIGTERM, then SIGKILL after grace period
-bash scripts/dev.sh restart    # stop + start
-bash scripts/dev.sh clean      # kill zombies, free :3100 + :5173
+bash ../scripts/dev.sh start    # api + ui in background; logs in /tmp/
+bash ../scripts/dev.sh status   # check ports / pids
+bash ../scripts/dev.sh logs     # tail both logs (Ctrl-C to stop tailing)
+bash ../scripts/dev.sh stop     # SIGTERM, then SIGKILL after grace period
+bash ../scripts/dev.sh restart  # stop + start
+bash ../scripts/dev.sh clean    # kill zombies, free :3100 + :5173
 ```
 
 The API expects PostgreSQL. Defaults are pinned to
@@ -48,7 +48,7 @@ The API expects PostgreSQL. Defaults are pinned to
 ## Scripts
 
 ```
-scripts/
+../scripts/
 ├── dev-start.sh     launch api+ui detached, logs in /tmp
 ├── dev-stop.sh      SIGTERM, then SIGKILL after GRACE_SECONDS (default 5)
 ├── dev-restart.sh   stop + start
@@ -58,6 +58,10 @@ scripts/
 
 Pid files: `/tmp/ultralisk-api.pid`, `/tmp/ultralisk-ui.pid`.
 Log files: `/tmp/ultralisk-api.log`, `/tmp/ultralisk-ui.log`.
+
+The `console-ui/scripts/postbuild-smoke.sh` script is package-internal —
+it grep's the console-ui build output for dev-only strings and runs as
+part of `pnpm --filter @ultralisk/console-ui build`.
 
 ## Quality gates
 

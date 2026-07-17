@@ -5,7 +5,7 @@
 # PIDs : /tmp/ultralisk-api.pid, /tmp/ultralisk-ui.pid
 set -euo pipefail
 
-REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 CONSOLE_ROOT="$REPO_ROOT/console"
 API_DIR="$CONSOLE_ROOT/console-api"
 UI_DIR="$CONSOLE_ROOT/console-ui"
