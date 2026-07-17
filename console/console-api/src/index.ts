@@ -30,6 +30,7 @@ import auditLogRoutes from './routes/auditLogs.js';
 import ssoConfigRoutes from './routes/ssoConfig.js';
 import licenseRoutes from './routes/license.js';
 import complianceRoutes from './routes/compliance.js';
+import healthRoutes from './routes/health.js';
 
 // Mode-specific route modules
 import apiKeyRoutes from './routes/apiKeys.js';
@@ -87,6 +88,9 @@ app.use((req, res, next) => {
   }
   next();
 });
+
+// === Health checks (unauthenticated, used by k8s probes) ===
+app.use(healthRoutes);
 
 // === Shared routes (both SaaS and Private) ===
 app.use('/v1/admin', authRoutes);
