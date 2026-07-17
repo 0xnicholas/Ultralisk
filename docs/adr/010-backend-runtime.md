@@ -195,6 +195,33 @@ message LoadModelRequest {
 
 Control Plane 创建 Endpoint 时调用 LoadModel。Backend 内部与 KAI Scheduler 交互申请 GPU 资源，再启动推理进程。Control Plane 不需要知道 KAI Scheduler 的存在——它只是说"我需要跑这个模型"。
 
+### InferParams 与采样架构（2026-07 更新）
+
+InferParams 在 Phase 2 中扩展了完整的采样参数字段：
+
+```protobuf
+message InferParams {
+  uint32 max_tokens = 1;
+  float temperature = 2;
+  float top_p = 3;
+  repeated string stop = 4;
+  string json_schema = 5;      // Constrained Decode
+  uint32 top_k = 6;             // ← Phase 2 新增
+  float repetition_penalty = 7; // ← Phase 2 新增
+  float frequency_penalty = 8;  // ← Phase 2 新增
+  float presence_penalty = 9;   // ← Phase 2 新增
+  uint64 seed = 10;             // ← Phase 2 新增 (0 = engine-default RNG)
+}
+```
+
+**采样在哪个层执行**：
+- vLLM Backend：采样在 vLLM 内部（Python/torch），InferParams 透传给 vLLM HTTP API
+- Zealot Backend：采样在 Rust Engine 层执行。PyModelRunner 返回 raw logits（`StepOut.logits`），Engine 调用 `Sampler::sample()` 完成 temperature/top-k/top-p/penalties/softmax/sampling 全链路。Python 不进 decode loop 的采样热路径
+
+**Tokenizer/Detokenizer 决策**：
+- Encoding（text→ids）：继续使用 Python HuggingFace tokenizer（PyModelRunner.tokenize_chat），在请求入口处一次性完成
+- Decoding（ids→text）：实现轻量级 Rust Tokenizer（`tokenizer.rs`），从 tokenizer.json 加载词汇表做 byte-level BPE 解码。Engine 采样后增量解码，消除 Python detokenizer 的 FFI 开销
+
 ### Backend Runtime 实现方式
 
 **vLLM Backend（适配器模式）**
