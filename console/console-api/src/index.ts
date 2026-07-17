@@ -40,8 +40,12 @@ import billingRoutes from './routes/billing.js';
 import { migrate } from './db/migrate.js';
 import pool from './db/index.js';
 import { startUsageCron } from './services/usageCron.js';
+import { startGpuMetricsCollector } from './services/gpuMetricsCollector.js';
+import { initClickHouse } from './services/clickhouseClient.js';
+import { migrateClickHouse } from './services/clickhouseMigrate.js';
 import { auditMiddleware } from './services/auditLog.js';
 import { authMiddleware } from './middleware/auth.js';
+import { rbacMiddleware } from './middleware/rbac.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
 import { logger } from './logger.js';
 
@@ -68,6 +72,12 @@ app.use(express.json());
 // Run all migrations on startup
 migrate().catch((err) => logger.error({ err }, 'migrate failed at boot'));
 startUsageCron();
+startGpuMetricsCollector();
+
+// Initialize ClickHouse asynchronously (non-blocking — falls back to PG)
+initClickHouse()
+  .then(() => migrateClickHouse())
+  .catch((err) => logger.error({ err }, 'ClickHouse init failed'));
 
 // Audit logging middleware (logs mutating requests)
 app.use('/v1/admin', auditMiddleware);
@@ -89,6 +99,19 @@ app.use((req, res, next) => {
   }
   if (req.path.startsWith('/v1/playground') || req.path === '/v1/playground') {
     return authMiddleware(req, res, next);
+  }
+  // Auth is not required for /v1/chat/completions at the Console API level;
+  // authentication happens at the Gateway. The RBAC middleware below still
+  // checks role if available; falls back to readonly (denied) by default.
+  next();
+});
+
+// === RBAC middleware — enforces role-based access on authenticated paths ===
+app.use((req, res, next) => {
+  const p = req.path;
+  if (p.startsWith('/v1/admin/') || p === '/v1/admin' ||
+      p === '/v1/chat/completions' || p.startsWith('/v1/playground')) {
+    return rbacMiddleware(req, res, next);
   }
   next();
 });
