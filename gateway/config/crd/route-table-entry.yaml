@@ -1,0 +1,65 @@
+# Ultralisk Gateway Route Table — K8s CRD
+#
+# Each CRD instance maps one model_id to a pool of GPU worker pods.
+# The Gateway watches these CRDs and hot-reloads its route table.
+#
+# Usage:
+#   kubectl apply -f route-table-entry.yaml
+#   kubectl apply -f llama-3-1-8b-entry.yaml
+#
+# The Gateway needs a ServiceAccount with get/list/watch on ultralisk.io/routetableentries.
+
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: routetableentries.ultralisk.io
+spec:
+  group: ultralisk.io
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          required: [spec]
+          properties:
+            spec:
+              type: object
+              required: [modelId, poolName, strategy]
+              properties:
+                modelId:
+                  type: string
+                  description: "Model identifier (e.g., llama-3.1-8b-instruct)"
+                poolName:
+                  type: string
+                  description: "Pool name for routing"
+                strategy:
+                  type: string
+                  enum: ["serverless", "batch", "reserved", "dedicated"]
+                  description: "Scheduling strategy"
+                pods:
+                  type: array
+                  items:
+                    type: object
+                    required: [id, address]
+                    properties:
+                      id:
+                        type: string
+                        description: "Unique pod identifier"
+                      address:
+                        type: string
+                        description: "host:port of the GPU worker"
+                      weight:
+                        type: integer
+                        minimum: 1
+                        default: 1
+                        description: "Load balancing weight"
+      subresources: {}
+  scope: Cluster
+  names:
+    plural: routetableentries
+    singular: routetableentry
+    kind: RouteTableEntry
+    shortNames:
+      - rte
