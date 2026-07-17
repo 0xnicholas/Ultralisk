@@ -145,6 +145,7 @@ router.get('/auth/me', async (req: Request, res: Response) => {
       })),
     }});
   } catch (err) {
+    req.log?.error({ err }, 'auth/me failed');
     res.status(500).json({ error: { code: 'internal_error', message: 'Internal server error' } });
   }
 });
