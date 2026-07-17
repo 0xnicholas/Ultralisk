@@ -67,7 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     if (exp === null) { logout(); return; }
     const ms = (exp - PROACTIVE_LOGOUT_LEEWAY_SEC) * 1000 - Date.now();
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (ms <= 0) { logout(); return; }
     const timer = setTimeout(() => logout(), ms);
     return () => clearTimeout(timer);
