@@ -1,5 +1,6 @@
 import pool from '../db/index.js';
 import { logger } from '../logger.js';
+import { checkAndSendBudgetAlerts } from './notificationService.js';
 
 // ADR-006 / Phase 1 M2: T-2 aggregation window.
 // Runs hourly, aggregates raw_usage_events from the hour-before-last
@@ -104,6 +105,21 @@ export async function aggregateUsage(): Promise<void> {
   }
 }
 
+export async function checkBudgetAlerts(): Promise<void> {
+  try {
+    const { rows: orgs } = await pool.query('SELECT id FROM orgs');
+    for (const org of orgs) {
+      try {
+        await checkAndSendBudgetAlerts(org.id);
+      } catch (innerErr) {
+        logger.error({ err: innerErr, orgId: org.id }, 'budget alert check failed for org');
+      }
+    }
+  } catch (err) {
+    logger.error({ err }, 'budget alert check: failed to list orgs');
+  }
+}
+
 let cronStarted = false;
 
 export function startUsageCron(): void {
@@ -111,11 +127,17 @@ export function startUsageCron(): void {
   cronStarted = true;
 
   // Run on startup (slight delay to let DB pool warm up)
-  setTimeout(() => aggregateUsage().catch((err) => logger.error({ err }, 'cron start failed')), 5000);
+  setTimeout(() => {
+    aggregateUsage().catch((err) => logger.error({ err }, 'cron start failed'));
+    checkBudgetAlerts().catch((err) => logger.error({ err }, 'budget alert start failed'));
+  }, 5000);
 
   // Run every hour. Multiple console-api instances (e.g. during tsx restarts)
   // are deduped via the PG advisory lock inside aggregateUsage().
-  const timer = setInterval(() => aggregateUsage().catch((err) => logger.error({ err }, 'cron tick failed')), 3600000);
+  const timer = setInterval(() => {
+    aggregateUsage().catch((err) => logger.error({ err }, 'cron tick failed'));
+    checkBudgetAlerts().catch((err) => logger.error({ err }, 'budget alert tick failed'));
+  }, 3600000);
   timer.unref();
 
   // Release the lock on shutdown so a fresh process can take over immediately.

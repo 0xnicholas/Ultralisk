@@ -21,7 +21,14 @@ router.get('/cost-analytics', async (_req: Request, res: Response) => {
     const totalCost = Number(summaryRows[0].total_cost_usd);
     const tokenCost = Number(summaryRows[0].token_cost_usd);
     const gpuCost = Number(summaryRows[0].gpu_hour_cost_usd);
-    const budgetUsd = 25000;
+
+    // Load budget settings from DB (fallback to defaults if not configured)
+    const { rows: settingsRows } = await pool.query(
+      'SELECT budget_usd, alerts_enabled, channels, suppression_window_minutes, thresholds FROM budget_alert_settings WHERE org_id = $1',
+      [orgId]
+    );
+    const settings = settingsRows[0] || {};
+    const budgetUsd = Number(settings.budget_usd) || 25000;
     const budgetUsedPct = Math.round((totalCost / budgetUsd) * 100 * 10) / 10;
     const estimatedMonthEnd = Math.round(totalCost / 30 * 31 * 100) / 100;
 
@@ -79,14 +86,26 @@ router.get('/cost-analytics', async (_req: Request, res: Response) => {
         budget_alerts: {
           budget_usd: budgetUsd,
           current_spend: totalCost,
-          alerts_enabled: true,
-          channels: ['email', 'slack'],
-          thresholds: [
-            { label: '70% warning', type: 'percent', value: 70, triggered: budgetUsedPct >= 70, triggered_at: budgetUsedPct >= 70 ? new Date().toISOString() : undefined },
-            { label: '90% critical', type: 'percent', value: 90, triggered: budgetUsedPct >= 90 },
-            { label: 'GPU utilization >85%', type: 'gpu_util', value: 85, triggered: false },
-          ],
-          suppression_window_minutes: 30,
+          alerts_enabled: settings.alerts_enabled !== false,
+          channels: settings.channels || ['email'],
+          thresholds: (settings.thresholds || [
+            { label: '70% warning', type: 'percent', value: 70 },
+            { label: '90% critical', type: 'percent', value: 90 },
+            { label: 'GPU utilization >85%', type: 'gpu_util', value: 85 },
+          ]).map((t: any) => ({
+            label: t.label,
+            type: t.type,
+            value: t.value,
+            triggered: t.type === 'percent'
+              ? budgetUsedPct >= t.value
+              : t.type === 'gpu_util'
+                ? false  // real-time check via cron
+                : false,
+            triggered_at: (t.type === 'percent' && budgetUsedPct >= t.value)
+              ? new Date().toISOString()
+              : undefined,
+          })),
+          suppression_window_minutes: settings.suppression_window_minutes || 30,
         },
       },
     });
