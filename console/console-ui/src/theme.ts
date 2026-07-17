@@ -1,6 +1,6 @@
-import { createTheme, DEFAULT_THEME, mergeMantineTheme } from '@mantine/core';
+import { createTheme } from '@mantine/core';
 
-const themeOverride = createTheme({
+export const theme = createTheme({
   primaryColor: 'violet',
   fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
   headings: { fontFamily: 'Inter, system-ui, -apple-system, sans-serif' },
@@ -13,5 +13,3 @@ const themeOverride = createTheme({
     ],
   },
 });
-
-export const theme = mergeMantineTheme(DEFAULT_THEME, themeOverride);

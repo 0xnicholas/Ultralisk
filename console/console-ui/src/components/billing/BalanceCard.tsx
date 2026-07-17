@@ -13,7 +13,7 @@ export function BalanceCard() {
 
   return (
     <Paper withBorder p="lg" radius="md" mb="md">
-      <Group justify="space-between" align="flex-start" wrap="wrap">
+      <Group justify="space-between" style={{ alignItems: 'flex-start' }} wrap="wrap">
         <Stack gap="xs">
           <Text size="sm" fw={500} c="dimmed">
             Current Balance

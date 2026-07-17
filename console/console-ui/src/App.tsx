@@ -5,14 +5,15 @@ import { Notifications } from '@mantine/notifications';
 import { AuthProvider, useAuth } from '@/stores/AuthContext';
 import { theme } from '@/theme';
 import { ConsoleLayout } from '@/layouts/ConsoleLayout';
+import { isSaaS } from '@/utils/deployment';
+
+// Shared pages
 import { LoginPage } from '@/pages/auth/LoginPage';
 import { AcceptInvitationPage } from '@/pages/auth/AcceptInvitationPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { ModelsPage } from '@/pages/models/ModelsPage';
 import { ModelDetailPage } from '@/pages/models/ModelDetailPage';
 import { PlaygroundPage } from '@/pages/playground/PlaygroundPage';
-import { ApiKeysPage } from '@/pages/api-keys/ApiKeysPage';
-import { BillingPage } from '@/pages/billing/BillingPage';
 import { ProfilePage } from '@/pages/settings/ProfilePage';
 import { EndpointsPage } from '@/pages/endpoints/EndpointsPage';
 import { CreateEndpointPage } from '@/pages/endpoints/CreateEndpointPage';
@@ -33,6 +34,19 @@ import { IncidentDetailPage } from '@/pages/incidents/IncidentDetailPage';
 import { OperationsSettingsPage } from '@/pages/settings/OperationsSettingsPage';
 import { IntegrationsPage } from '@/pages/settings/IntegrationsPage';
 import { OrganizationPage } from '@/pages/settings/OrganizationPage';
+import { ModelRegistryPage } from '@/pages/models/ModelRegistryPage';
+
+// SaaS-only pages
+import { ApiKeysPage } from '@/pages/api-keys/ApiKeysPage';
+import { BillingPage } from '@/pages/billing/BillingPage';
+
+// Private-only pages
+import { SetupWizardPage } from '@/private/pages/setup/SetupWizardPage';
+import { AuditLogPage } from '@/private/pages/audit-logs/AuditLogPage';
+import { SsoConfigPage } from '@/private/pages/settings/sso/SsoConfigPage';
+import { CompliancePage } from '@/private/pages/compliance/CompliancePage';
+import { LicensePage } from '@/private/pages/license/LicensePage';
+
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import { showApiError } from '@/api/errorHandler';
 
@@ -80,10 +94,9 @@ export function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/models" element={<ModelsPage />} />
               <Route path="/models/:modelId" element={<ModelDetailPage />} />
+              <Route path="/models/registry" element={<ModelRegistryPage />} />
               <Route path="/playground" element={<PlaygroundPage />} />
               <Route path="/playground/:sessionId" element={<PlaygroundPage />} />
-              <Route path="/api-keys" element={<ApiKeysPage />} />
-              <Route path="/billing" element={<BillingPage />} />
               <Route path="/endpoints" element={<EndpointsPage />} />
               <Route path="/endpoints/new" element={<CreateEndpointPage />} />
               <Route path="/endpoints/:id" element={<EndpointDetailPage />} />
@@ -105,6 +118,27 @@ export function App() {
               <Route path="/settings/organization" element={<OrganizationPage />} />
               <Route path="/settings/operations" element={<OperationsSettingsPage />} />
               <Route path="/settings/integrations" element={<IntegrationsPage />} />
+              {isSaaS() && (
+                <>
+                  <Route path="/api-keys" element={<ApiKeysPage />} />
+                  <Route path="/billing" element={<BillingPage />} />
+                </>
+              )}
+              {!isSaaS() && (
+                <Route path="/setup" element={<SetupWizardPage />} />
+              )}
+              {!isSaaS() && (
+                <Route path="/audit-logs" element={<AuditLogPage />} />
+              )}
+              {!isSaaS() && (
+                <Route path="/settings/sso" element={<SsoConfigPage />} />
+              )}
+              {!isSaaS() && (
+                <Route path="/compliance" element={<CompliancePage />} />
+              )}
+              {!isSaaS() && (
+                <Route path="/license" element={<LicensePage />} />
+              )}
               </Route>
             </Routes>
             </ErrorBoundary>

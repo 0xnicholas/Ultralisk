@@ -15,7 +15,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return this.props.fallback ?? (
         <Center h={400}>
-          <Stack align="center" gap="md">
+          <Stack style={{ alignItems: 'center' }} gap="md">
             <IconAlertCircle size={48} color="var(--mantine-color-red-6)" />
             <Title order={3}>Something went wrong</Title>
             <Text size="sm" c="dimmed" maw={400} ta="center">{this.state.error?.message}</Text>

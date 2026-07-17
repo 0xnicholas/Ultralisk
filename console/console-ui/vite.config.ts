@@ -10,6 +10,9 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  define: {
+    'import.meta.env.VITE_DEPLOYMENT_MODE': JSON.stringify(process.env.DEPLOYMENT_MODE || 'saas'),
+  },
   server: {
     proxy: {
       '/v1/admin': 'http://localhost:3100',
