@@ -26,7 +26,7 @@ export function TopBar() {
           <Menu shadow="md" width={200}>
             <Menu.Target>
               <Avatar color="violet" radius="xl" style={{ cursor: 'pointer' }}>
-                {user.name.charAt(0).toUpperCase()}
+                {(user.displayName || user.email).charAt(0).toUpperCase()}
               </Avatar>
             </Menu.Target>
             <Menu.Dropdown>

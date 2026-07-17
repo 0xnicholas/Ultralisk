@@ -5,7 +5,27 @@ import pool from '../db/index.js';
 // into billing_summary, per org per month.
 // Uses the hour-before-last to avoid missing late final responses.
 
+const CRON_LOCK_KEY = 0x75_73_61_67_65; // arbitrary 32-bit int
+let cronOwner = false;
+
+async function tryAcquireLock(client: any): Promise<boolean> {
+  const { rows } = await client.query('SELECT pg_try_advisory_lock($1) AS got', [CRON_LOCK_KEY]);
+  return rows[0]?.got === true;
+}
+
 export async function aggregateUsage(): Promise<void> {
+  if (!cronOwner) {
+    const client = await pool.connect();
+    try {
+      cronOwner = await tryAcquireLock(client);
+    } finally {
+      client.release();
+    }
+    if (!cronOwner) {
+      // another instance already owns the cron for this DB
+      return;
+    }
+  }
   const now = new Date();
   // T-2: hour-before-last
   const windowEnd = new Date(now);
@@ -83,11 +103,29 @@ export async function aggregateUsage(): Promise<void> {
   }
 }
 
-// Start hourly cron
+let cronStarted = false;
+
 export function startUsageCron(): void {
-  // Run on startup
+  if (cronStarted) return;
+  cronStarted = true;
+
+  // Run on startup (slight delay to let DB pool warm up)
   setTimeout(() => aggregateUsage().catch(console.error), 5000);
 
-  // Run every hour (at :05 to ensure late events from T-2 are in)
-  setInterval(() => aggregateUsage().catch(console.error), 3600000);
+  // Run every hour. Multiple console-api instances (e.g. during tsx restarts)
+  // are deduped via the PG advisory lock inside aggregateUsage().
+  const timer = setInterval(() => aggregateUsage().catch(console.error), 3600000);
+  timer.unref();
+
+  // Release the lock on shutdown so a fresh process can take over immediately.
+  const release = async () => {
+    if (cronOwner) {
+      try {
+        await pool.query('SELECT pg_advisory_unlock($1)', [CRON_LOCK_KEY]);
+      } catch { /* ignore */ }
+      cronOwner = false;
+    }
+  };
+  process.once('SIGINT', () => { release(); process.exit(0); });
+  process.once('SIGTERM', () => { release(); process.exit(0); });
 }

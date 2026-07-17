@@ -13,7 +13,7 @@ import { useState } from 'react';
 export function ProfilePage() {
   const { user } = useAuth();
   const { colorScheme, setColorScheme } = useMantineColorScheme();
-  const [name, setName] = useState(user?.name ?? '');
+  const [name, setName] = useState(user?.displayName ?? '');
   const [saved, setSaved] = useState(false);
 
   const handleSave = () => {

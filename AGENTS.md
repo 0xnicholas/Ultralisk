@@ -35,17 +35,21 @@ Read `docs/adr/000-platform-object-model.md` first — all architecture decision
 ```
 console/                     ← Self-contained monorepo (pnpm workspace)
   ├── console-api/           ← Express API (TypeScript, port 3100, PostgreSQL-backed)
-  │     src/index.ts         ← Route wiring + remaining mock routes (invitations, gpu-utilization, cost-analytics)
-  │     src/routes/          ← 17 route modules (auth, apiKeys, models, billing, clusters, deployments, ...)
-  │     src/db/migrate.ts    ← Runs drizzle/*.sql migrations on startup
-  │     drizzle/             ← SQL migrations 001-004 (Phase 1 + Phase 2 tables)
-  │     src/fixtures.ts      ← Mock data for the remaining mock routes only
-  ├── console-ui/            ← React SPA (TypeScript, Vite, Mantine v9)
-  │     src/App.tsx          ← React Router v7 routes
-  │     src/api/             ← API client modules (auto-generated from mock)
-  │     src/pages/           ← Page components per route
-  │     src/components/      ← Shared UI components
-  │     vite.config.ts       ← Dev proxy /v1/admin → :3100, /v1/chat → :3100
+  │     src/index.ts         ← Route wiring — SaaS/Private mode via DEPLOYMENT_MODE env var
+  │     src/routes/          ← 22 route modules across shared, SaaS-only, and private-only
+  │     src/db/migrate.ts    ← Runs drizzle/*.sql migrations 001-007 on startup
+  │     drizzle/             ← SQL migrations 001-007 (Phase 1 + Phase 2 + Phase 3 tables)
+  │     src/fixtures.ts      ← Retained for reference; all routes now PG-backed
+  │     src/services/        ← auditLog middleware, usageCron, authService client
+  ├── console-ui/            ← React SPA (TypeScript, Vite, Mantine v9, React Router v7)
+  │     src/App.tsx          ← Routes split by mode (shared + SaaS-only + private-only)
+  │     src/utils/deployment.ts ← isSaaS()/isPrivate() mode detection
+  │     src/pages/           ← Shared pages (Dashboard, Models, Operations, etc.)
+  │     src/saas/            ← SaaS-only pages (Billing, API Keys)
+  │     src/private/         ← Private-only pages (Setup Wizard, Audit Logs, Compliance, License, SSO)
+  │     src/api/             ← API client modules
+  │     src/components/      ← Shared UI components (Sidebar supports mode-based nav)
+  │     vite.config.ts       ← Dev proxy + DEPLOYMENT_MODE env var injection
   ├── brand/                 ← Logo SVGs + brand README
   ├── screenshots/           ← Competitor reference screenshots
   ├── package.json           ← turbo + typescript
@@ -71,12 +75,12 @@ docs/                        ← Architecture documentation (root level)
   └── superpowers/           ← Historical planning docs
 
 gateway/                     ← Rust API gateway (default port 8080)
-  ├── src/                   ← middleware/ (auth, rate_limit), extract/, proxy/ (SSE), route/, batch.rs, cold_start.rs
+  ├── src/                   ← middleware/ (auth, rate_limit), extract/, proxy/ (SSE), route/, batch.rs, cold_start.rs, route/watcher.rs
   ├── config/route_table.json← model → Pool routing table (weight field for A/B)
   └── tests/                 ← Integration suite (chat, admin, auth, rate limit, route); skips when PG/Redis absent
 
 auth-service/                ← Rust auth service (default port 3101)
-  └── src/                   ← login/refresh/keys/validate_key, revocation Pub/Sub
+  └── src/                   ← login/refresh/keys/validate_key, revocation Pub/Sub, totp module
 
 proto/                       ← Runtime Interface 契约（ADR-010），Gateway + 各 Backend Runtime 共用
   └── runtime/v1/runtime.proto
@@ -90,6 +94,8 @@ zealot/                      ← Self-built inference engine (standalone, Rust c
   ├── src/bin/zealot-backend.rs ← Runtime Interface gRPC server, Engine actor (:9091)
   ├── build.rs               ← tonic-build for ../proto (vendored protoc)
   └── docs/architecture.md   ← Engine design doc
+
+.gitignore                   ← Root-level, also covers console/ paths
 
 .gitignore                   ← Root-level, also covers console/ paths
 ```
@@ -133,6 +139,16 @@ pnpm install
 pnpm dev          # Starts both console-api (:3100) and console-ui (:5173)
                   # console-api needs PostgreSQL; migrations auto-run on startup
 
+# Or use the lifecycle scripts (background mode, with logging to /tmp/):
+bash console/scripts/dev.sh start    # launch api+ui
+bash console/scripts/dev.sh status   # check ports / pids
+bash console/scripts/dev.sh logs     # tail api+ui logs (Ctrl-C to stop)
+bash console/scripts/dev.sh stop     # SIGTERM → SIGKILL after grace period
+bash console/scripts/dev.sh restart  # stop + start
+bash console/scripts/dev.sh clean    # nuclear: kill zombies, free :3100 & :5173
+# Logs: /tmp/ultralisk-api.log, /tmp/ultralisk-ui.log
+# Pids: /tmp/ultralisk-api.pid, /tmp/ultralisk-ui.pid
+
 # Rust crates (independent cargo projects, test per crate)
 cd gateway && cargo test       # integration tests skip gracefully without PG/Redis
 cd auth-service && cargo test
@@ -175,11 +191,11 @@ Every ADR must reference `ADR-000 (Platform Object Model)` in its dependencies.
 
 ---
 
-## Current State (Phase 1 code complete, Phase 2 M4 landed)
+## Current State (Phase 1 complete + Phase 2 complete + Phase 3 Console complete)
 
-- **Gateway**: Phase 1 complete — auth, body-based routing, Lua-atomic rate limit, SSE streaming proxy, batch aggregation, cold-start queue, graceful shutdown, Prometheus metrics. M4: multi-instance batch coordination (Redis SETNX lease + cross-instance forwarding), weighted pod selection. `cargo test`: 28/28 pass.
-- **Auth Service**: Complete — login/refresh/keys/validate_key/me, revocation via Pub/Sub + revocation_version fallback. 8/8 tests pass.
-- **Console API**: Real PostgreSQL (migrations 001-004, incl. Phase 2 tables: clusters, nodes, gpu_cards, deployments, incidents, alerts). Reserved strategy live (`tps_guarantee` + `priority` on endpoints). Usage aggregation cron (T-2) runs on startup. Still mock: invitations, gpu-utilization, cost-analytics (await ClickHouse/Prometheus).
-- **Console UI**: 15 pages — Phase 1a/1b plus Phase 2 (Clusters, Nodes, Deployments, Incidents, GPU Utilization, Cost Analytics). Served via Vite proxy to :3100.
+- **Gateway**: Phase 1 complete — auth, body-based routing, Lua-atomic rate limit, SSE streaming proxy, batch aggregation, cold-start queue, graceful shutdown, Prometheus metrics. M4: multi-instance batch coordination (Redis SETNX lease + cross-instance forwarding), weighted pod selection. M6: Route table hot-reload via file watcher (`notify` crate, `PollWatcher`). `cargo test --lib`: 29/29 pass.
+- **Auth Service**: Complete — login/refresh/keys/validate_key/me, revocation via Pub/Sub + revocation_version fallback. TOTP two-factor authentication (setup, verify, disable, login/totp). `cargo test`: 12/12 pass.
+- **Console API**: Real PostgreSQL (migrations 001-007). SaaS/Private mode via `DEPLOYMENT_MODE` env var. All routes PG-backed (no mock fixtures). Auditing middleware auto-logs POST/PUT/PATCH/DELETE. GPU utilization + cost analytics backed by dev-mode PG tables (ClickHouse-ready). Model registry for offline imports (HF/S3/MinIO).
+- **Console UI**: 15 shared pages + SaaS-only (Billing, API Keys) + private-only (Setup Wizard, Audit Logs, Compliance, License, SSO). Mode-based route registration and sidebar. Mantine v9, React Router v7, `isSaaS()`/`isPrivate()` pattern. Sidebar and routes adapt to deployment mode.
 - **Zealot**: P1 components done — Block Manager (generation-gated handles) + Constrained Decode (JSON schema → DFA). Scheduler landed: priority queue, block budget via BlockManager, admission control, OOM preemption (recompute). `zealot-backend` is a real Runtime Interface server (`proto/runtime/v1/runtime.proto`, ADR-010) running an Engine actor over a `ModelRunner` trait; dev-mode `PyModelRunner` (PyO3-embedded torch CPU forward, Python in decode loop — temporary until GPU kernels land) serves real inference end-to-end. 26/26 unit + 2/2 backend e2e + 1/1 real-model CPU e2e pass. CUDA kernels, Batch, sampling params still open.
 - **Not deployed**: no real GPU, no vLLM, no K8s/KAI cluster. Inference behind the Gateway is still stubbed; Phase 1 acceptance metrics (P99 < 2s, revocation < 100ms, GPU util > 30%) are unverified.

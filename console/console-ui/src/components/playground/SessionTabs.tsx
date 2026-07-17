@@ -13,9 +13,35 @@ export function SessionTabs({ sessions, activeId, onSelect, onCreate, onRename, 
       <Group gap={0} wrap="nowrap">
         <Tabs.List style={{ flex: 1, overflow: 'auto' }}>
           {sessions.map((s) => (
-            <Tabs.Tab key={s.id} value={s.id} onDoubleClick={() => { setEditingId(s.id); setEditValue(s.name); }}
-              rightSection={sessions.length > 1 ? <ActionIcon size="xs" variant="subtle" color="gray" onClick={(e) => { e.stopPropagation(); onDelete(s.id); }}><IconX size={12} /></ActionIcon> : undefined}>
-              {editingId === s.id ? <TextInput size="xs" value={editValue} onChange={(e) => setEditValue(e.currentTarget.value)} onBlur={() => { onRename(s.id, editValue || s.name); setEditingId(null); }} onKeyDown={(e) => { if (e.key === 'Enter') { onRename(s.id, editValue || s.name); setEditingId(null); } }} autoFocus onClick={(e) => e.stopPropagation()} style={{ minWidth: 80 }} /> : s.name}
+            <Tabs.Tab
+              key={s.id}
+              value={s.id}
+              onDoubleClick={() => { setEditingId(s.id); setEditValue(s.name); }}
+              rightSection={
+                sessions.length > 1 ? (
+                  <span
+                    role="button"
+                    aria-label="Delete session"
+                    onClick={(e) => { e.stopPropagation(); onDelete(s.id); }}
+                    style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 18, height: 18, borderRadius: 4, cursor: 'pointer' }}
+                  >
+                    <IconX size={12} />
+                  </span>
+                ) : undefined
+              }
+            >
+              {editingId === s.id ? (
+                <TextInput
+                  size="xs"
+                  value={editValue}
+                  onChange={(e) => setEditValue(e.currentTarget.value)}
+                  onBlur={() => { onRename(s.id, editValue || s.name); setEditingId(null); }}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { onRename(s.id, editValue || s.name); setEditingId(null); } }}
+                  autoFocus
+                  onClick={(e) => e.stopPropagation()}
+                  style={{ minWidth: 80 }}
+                />
+              ) : s.name}
             </Tabs.Tab>
           ))}
         </Tabs.List>

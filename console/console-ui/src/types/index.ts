@@ -2,12 +2,17 @@
 export interface User {
   id: string;
   email: string;
-  name: string;
-  avatar_url: string | null;
+  displayName: string;
   role: 'admin' | 'developer' | 'readonly';
-  org_id: string;
-  org_name: string;
-  created_at: string;
+  org: { id: string; name: string } | null;
+  apiKeys?: Array<{
+    id: string;
+    keyPrefix: string;
+    name: string;
+    status: string;
+    lastUsedAt: string | null;
+    createdAt: string;
+  }>;
 }
 
 // === Models ===

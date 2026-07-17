@@ -3,6 +3,7 @@
 -- Add model_id to existing billing_summary for per-model cost tracking
 ALTER TABLE billing_summary ADD COLUMN IF NOT EXISTS model_id VARCHAR(100);
 ALTER TABLE billing_summary DROP CONSTRAINT IF EXISTS billing_summary_org_id_year_month_key;
+ALTER TABLE billing_summary DROP CONSTRAINT IF EXISTS billing_summary_org_id_year_month_model_id_key;
 ALTER TABLE billing_summary ADD CONSTRAINT billing_summary_org_id_year_month_model_id_key UNIQUE(org_id, year_month, model_id);
 
 CREATE TABLE IF NOT EXISTS endpoints (
@@ -63,3 +64,17 @@ CREATE INDEX IF NOT EXISTS idx_batch_jobs_user_id ON batch_jobs(user_id);
 CREATE INDEX IF NOT EXISTS idx_batch_jobs_status ON batch_jobs(status);
 CREATE INDEX IF NOT EXISTS idx_chat_sessions_user_id ON chat_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_usage_aggregation_log_window ON usage_aggregation_log(window_start);
+
+-- raw_usage_events: append-only table written by Gateway proxy, read by Console T-2 aggregation cron
+CREATE TABLE IF NOT EXISTS raw_usage_events (
+    request_id          VARCHAR(255) PRIMARY KEY,
+    api_key_id          VARCHAR(255),
+    user_id             VARCHAR(255),
+    org_id              VARCHAR(255),
+    model_id            VARCHAR(100),
+    prompt_tokens       INTEGER,
+    completion_tokens   INTEGER,
+    started_at          TIMESTAMPTZ,
+    completed_at        TIMESTAMPTZ,
+    status              VARCHAR(20)
+);
