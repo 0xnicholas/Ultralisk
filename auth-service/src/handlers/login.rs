@@ -2,6 +2,7 @@ use std::sync::Arc;
 use std::time::Instant;
 use axum::{extract::State, Json};
 use dashmap::DashMap;
+use redis::aio::MultiplexedConnection;
 use serde::Deserialize;
 use sqlx::PgPool;
 use crate::auth::{jwt, password};
@@ -23,6 +24,7 @@ pub async fn handler(
     State(brute_force): State<BruteForceMap>,
     State(jwt_secret): State<String>,
     State(refresh_tokens): State<crate::handlers::refresh::RefreshTokenStore>,
+    State(redis): State<MultiplexedConnection>,
     Json(req): Json<LoginRequest>,
 ) -> Result<Json<LoginResponse>, AppError> {
     // Check brute force lock
@@ -49,6 +51,33 @@ pub async fn handler(
     // Success — clear counter
     brute_force.remove(&req.email);
 
+    // Check if user has TOTP enabled
+    let totp_secret: Option<String> = sqlx::query_scalar("SELECT totp_secret FROM users WHERE id = $1")
+        .bind(user.id)
+        .fetch_optional(&pool)
+        .await
+        .map_err(|e| AppError::Internal(e.to_string()))?
+        .flatten();
+
+    if let Some(_secret) = totp_secret {
+        // TOTP is enabled — create session token and require second factor
+        let session_token = crate::handlers::totp::create_totp_session(&redis, &user.id.to_string()).await?;
+        return Ok(Json(LoginResponse {
+            access_token: String::new(),
+            refresh_token: String::new(),
+            expires_in: 300,
+            totp_required: true,
+            session_token: Some(session_token),
+            user: UserInfo {
+                id: user.id.to_string(),
+                email: user.email,
+                display_name: user.display_name,
+                role: user.role,
+                org: OrgInfo { id: user.org_id.to_string(), name: "Test Org".into() },
+            },
+        }));
+    }
+
     let token = jwt::create_access_token(
         &user.id.to_string(), &user.org_id.to_string(), &user.role, &jwt_secret,
     )?;
@@ -58,6 +87,8 @@ pub async fn handler(
         access_token: token,
         refresh_token,
         expires_in: 3600,
+        totp_required: false,
+        session_token: None,
         user: UserInfo {
             id: user.id.to_string(),
             email: user.email,

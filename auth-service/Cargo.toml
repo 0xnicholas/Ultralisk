@@ -25,6 +25,9 @@ metrics-exporter-prometheus = "0.16"
 thiserror = "2"
 anyhow = "1"
 dashmap = "6"
+totp-rs = { version = "5", features = ["gen_secret", "otpauth"] }
+base64 = "0.22"
+
 
 [dev-dependencies]
 testcontainers = "0.23"

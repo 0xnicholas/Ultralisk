@@ -1,5 +1,6 @@
 use axum::{Router, routing::{get, post}};
 use axum::extract::FromRef;
+use redis::aio::MultiplexedConnection;
 use sqlx::PgPool;
 use tower_http::limit::RequestBodyLimitLayer;
 use crate::config::AppConfig;
@@ -9,6 +10,7 @@ use crate::revocation::Revocation;
 #[derive(Clone)]
 pub struct AppState {
     pub pool: PgPool,
+    pub redis: MultiplexedConnection,
     pub revocation: Revocation,
     pub jwt_secret: String,
     pub brute_force: handlers::login::BruteForceMap,
@@ -20,6 +22,9 @@ impl FromRef<AppState> for PgPool {
 }
 impl FromRef<AppState> for Revocation {
     fn from_ref(state: &AppState) -> Self { state.revocation.clone() }
+}
+impl FromRef<AppState> for MultiplexedConnection {
+    fn from_ref(state: &AppState) -> Self { state.redis.clone() }
 }
 impl FromRef<AppState> for String {
     fn from_ref(state: &AppState) -> Self { state.jwt_secret.clone() }
@@ -46,16 +51,23 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
     });
 
     let state = AppState {
-        pool,
+        pool: pool.clone(),
+        redis: redis_conn.clone(),
         revocation: Revocation::new(redis_conn),
         jwt_secret: config.jwt_secret.clone(),
         brute_force: std::sync::Arc::new(dashmap::DashMap::new()),
         refresh_tokens: std::sync::Arc::new(std::sync::Mutex::new(std::collections::HashMap::new())),
     };
 
+    let totp_router = Router::new()
+        .route("/totp/setup", post(handlers::totp::setup_handler))
+        .route("/totp/verify-setup", post(handlers::totp::verify_setup_handler))
+        .route("/totp/disable", post(handlers::totp::disable_handler));
+
     let app = Router::new()
         .route("/validate-key", post(handlers::validate_key::handler))
         .route("/login", post(handlers::login::handler))
+        .route("/login/totp", post(handlers::totp::login_totp_handler))
         .route("/refresh", post(handlers::refresh::handler))
         .route("/keys", post(handlers::keys::handler))
         .route("/me", get(handlers::me::handler))
@@ -65,6 +77,7 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
             let handle = metrics_handle.clone();
             async move { handle.render() }
         }))
+        .merge(totp_router)
         .with_state(state)
         .layer(RequestBodyLimitLayer::new(10 * 1024));
 

@@ -10,7 +10,12 @@ pub async fn migrate(pool: &PgPool) -> anyhow::Result<()> {
         "SELECT EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name = 'orgs')"
     ).fetch_one(pool).await?;
     if exists {
-        tracing::info!("Tables already exist, skipping migration");
+        // Run incremental migrations
+        let sql002 = include_str!("../../migrations/002_totp.sql");
+        for stmt in sql002.split(';').map(|s| s.trim()).filter(|s| !s.is_empty()) {
+            sqlx::query(stmt).execute(pool).await?;
+        }
+        tracing::info!("Incremental migrations applied");
         return Ok(());
     }
     let sql = include_str!("../../migrations/001_init.sql");

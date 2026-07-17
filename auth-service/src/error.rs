@@ -15,6 +15,8 @@ pub enum AppError {
     InvalidToken,
     #[error("Account locked due to too many login attempts")]
     AccountLocked { retry_after_secs: u64 },
+    #[error("TOTP verification required")]
+    TOTPRequired,
     #[error("Unauthorized")]
     Unauthorized,
     #[error("Internal error: {0}")]
@@ -33,6 +35,7 @@ impl IntoResponse for AppError {
             AppError::ApiKeyNotFound => (StatusCode::NOT_FOUND, "api_key_not_found"),
             AppError::ApiKeyRevoked => (StatusCode::OK, "api_key_revoked"),
             AppError::InvalidToken => (StatusCode::UNAUTHORIZED, "invalid_token"),
+            AppError::TOTPRequired => (StatusCode::OK, "totp_required"),
             AppError::AccountLocked { .. } => (StatusCode::TOO_MANY_REQUESTS, "account_locked"),
             AppError::Unauthorized => (StatusCode::UNAUTHORIZED, "unauthorized"),
             AppError::Internal(_) => (StatusCode::INTERNAL_SERVER_ERROR, "internal_error"),

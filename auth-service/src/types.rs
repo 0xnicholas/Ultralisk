@@ -49,6 +49,9 @@ pub struct LoginResponse {
     pub access_token: String,
     pub refresh_token: String,
     pub expires_in: u64,
+    pub totp_required: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub session_token: Option<String>,
     pub user: UserInfo,
 }
 
