@@ -1,5 +1,6 @@
-import { createContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useState, useCallback, useEffect, type ReactNode } from 'react';
 import type { User } from '@/types';
+import { AUTH_EXPIRED_EVENT } from '@/api/client';
 
 interface AuthState {
   user: User | null;
@@ -27,6 +28,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
   const [jwt, setJwt] = useState<string | null>(() => localStorage.getItem(JWT_KEY));
   const [isLoading, setIsLoading] = useState(false);
+
+  const logout = useCallback(() => {
+    setUser(null);
+    setJwt(null);
+    localStorage.removeItem(JWT_KEY);
+    localStorage.removeItem(USER_KEY);
+  }, []);
+
+  // apiFetch dispatches AUTH_EXPIRED_EVENT on any 401 (except login).
+  // Clear local state so AuthGuard redirects to /login.
+  useEffect(() => {
+    const handler = () => logout();
+    window.addEventListener(AUTH_EXPIRED_EVENT, handler);
+    return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handler);
+  }, [logout]);
 
   const saveAuth = useCallback((user: User, jwt: string) => {
     setUser(user);
@@ -56,13 +72,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     }
   }, [saveAuth]);
-
-  const logout = useCallback(() => {
-    setUser(null);
-    setJwt(null);
-    localStorage.removeItem(JWT_KEY);
-    localStorage.removeItem(USER_KEY);
-  }, []);
 
   return (
     <AuthContext.Provider value={{ user, jwt, isLoading, login, acceptInvitation, logout }}>
