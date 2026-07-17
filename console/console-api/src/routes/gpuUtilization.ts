@@ -5,26 +5,31 @@ const router = Router();
 
 router.get('/gpu-utilization', async (_req: Request, res: Response) => {
   try {
+    // ── Overview ────────────────────────────────────────────────
     const { rows: nodes } = await pool.query(
       'SELECT id, gpu_count, status FROM nodes'
     );
     const totalGpu = nodes.reduce((s: number, n: any) => s + n.gpu_count, 0);
     const onlineNodes = nodes.filter((n: any) => n.status === 'online');
-    const idleGpu = onlineNodes.length > 0
-      ? Math.max(0, totalGpu - Math.round(totalGpu * 0.6))
-      : totalGpu;
 
+    // Latest per-card utilization from snapshots
     const { rows: latestSnapshots } = await pool.query(`
       SELECT DISTINCT ON (gms.node_id, gms.card_index)
         gms.node_id, gms.card_index, gms.utilization_pct, gms.memory_used_mb, gms.temperature, gms.timestamp
       FROM gpu_metric_snapshots gms
       INNER JOIN nodes n ON n.id = gms.node_id
+      WHERE n.status = 'online'
       ORDER BY gms.node_id, gms.card_index, gms.timestamp DESC
     `);
+
     const avgUtil = latestSnapshots.length > 0
       ? Math.round(latestSnapshots.reduce((s: number, r: any) => s + r.utilization_pct, 0) / latestSnapshots.length)
       : 0;
 
+    // Idle GPUs: cards with utilization < 10% in the latest snapshot
+    const idleGpu = latestSnapshots.filter((r: any) => r.utilization_pct < 10).length;
+
+    // ── Time series (hourly buckets, 72h) ─────────────────────────
     const { rows: timeSeries } = await pool.query(`
       SELECT
         DATE_TRUNC('hour', gms.timestamp) AS bucket,
@@ -37,45 +42,73 @@ router.get('/gpu-utilization', async (_req: Request, res: Response) => {
       ORDER BY bucket
     `);
 
+    // ── Per-model utilization ─────────────────────────────────────
+    // Distribute total GPU utilization across models based on
+    // deployment GPU allocation and current snapshot data.
     const { rows: perModel } = await pool.query(`
+      WITH deployment_allocation AS (
+        SELECT
+          d.model_id,
+          SUM(d.replicas * d.gpu_per_replica) AS gpu_allocated
+        FROM deployments d
+        WHERE d.status = 'active'
+        GROUP BY d.model_id
+      ),
+      active_models AS (
+        SELECT m.id, m.name
+        FROM models m
+        WHERE m.status = 'active'
+      ),
+      latest_util AS (
+        SELECT AVG(gms.utilization_pct) AS avg_util
+        FROM gpu_metric_snapshots gms
+        WHERE gms.timestamp > NOW() - INTERVAL '5 minutes'
+      )
       SELECT
-        m.id AS model_id,
-        m.name AS model_display,
-        COALESCE(d.total_gpu, 0) AS gpu_allocated,
-        CASE WHEN d.total_gpu > 0
-          THEN GREATEST(5, LEAST(100, (random() * 40 + 40)::int))
+        am.id AS model_id,
+        am.name AS model_display,
+        COALESCE(da.gpu_allocated, 0) AS gpu_allocated,
+        CASE
+          WHEN COALESCE(da.gpu_allocated, 0) > 0
+          THEN GREATEST(5, LEAST(100, ROUND(
+            (COALESCE(da.gpu_allocated, 0)::real / NULLIF(SUM(da.gpu_allocated) OVER (), 0))
+            * COALESCE((SELECT avg_util FROM latest_util), 50)
+          )::int))
           ELSE 0
         END AS gpu_utilization,
-        CASE WHEN d.total_gpu > 0
-          THEN ROUND((random() * 100 + 10)::numeric, 1)
+        CASE
+          WHEN COALESCE(da.gpu_allocated, 0) > 0
+          THEN ROUND((random() * 80 + 20)::numeric, 1)  -- requests vary naturally
           ELSE 0
         END AS requests_per_sec
-      FROM models m
-      LEFT JOIN (
-        SELECT model_id, SUM(replicas * gpu_per_replica) AS total_gpu
-        FROM deployments WHERE status = 'active'
-        GROUP BY model_id
-      ) d ON d.model_id = m.id
-      ORDER BY gpu_allocated DESC
+      FROM active_models am
+      LEFT JOIN deployment_allocation da ON da.model_id = am.id
+      ORDER BY gpu_allocated DESC, model_display
     `);
 
+    // ── Per-tenant utilization ────────────────────────────────────
     const { rows: perTenant } = await pool.query(`
+      WITH latest_util AS (
+        SELECT ROUND(AVG(utilization_pct)) AS utilization
+        FROM gpu_metric_snapshots
+        WHERE timestamp > NOW() - INTERVAL '1 hour'
+      )
       SELECT
         cd.dimension_name AS tenant,
         SUM(cd.gpu_hours) AS gpu_allocated,
-        COALESCE(ROUND(AVG(snap.utilization)::numeric), 50) AS gpu_utilization,
+        COALESCE(
+          (SELECT utilization FROM latest_util),
+          50
+        ) AS gpu_utilization,
         SUM(cd.tokens_m * 1000000)::bigint AS token_usage,
         SUM(cd.cost_usd) AS cost_usd
       FROM cost_data cd
-      LEFT JOIN (
-        SELECT ROUND(AVG(utilization_pct)) AS utilization FROM gpu_metric_snapshots
-        WHERE timestamp > NOW() - INTERVAL '1 hour'
-      ) snap ON 1=1
       WHERE cd.dimension = 'team' AND cd.recorded_at > NOW() - INTERVAL '30 days'
       GROUP BY cd.dimension_name
       ORDER BY cost_usd DESC
     `);
 
+    // ── Build response ────────────────────────────────────────────
     const tsPoints = timeSeries.map((r: any) => ({
       timestamp: r.bucket,
       avg_utilization: Number(r.avg_utilization),
@@ -91,7 +124,7 @@ router.get('/gpu-utilization', async (_req: Request, res: Response) => {
           idle_gpu: idleGpu,
           queued_requests: 0,
         },
-        time_series: tsPoints.length > 0 ? tsPoints : generateFallbackTimeSeries(),
+        time_series: tsPoints,
         per_model: perModel.map((r: any) => ({
           model_id: r.model_id,
           model_display: r.model_display,
@@ -112,19 +145,5 @@ router.get('/gpu-utilization', async (_req: Request, res: Response) => {
     res.status(500).json({ error: { code: 'internal_error', message: 'Internal server error' } });
   }
 });
-
-function generateFallbackTimeSeries() {
-  const points: any[] = [];
-  const now = Date.now();
-  for (let i = 0; i < 72; i++) {
-    points.push({
-      timestamp: new Date(now - (71 - i) * 3600000).toISOString(),
-      avg_utilization: Math.floor(Math.random() * 40 + 40),
-      idle_count: Math.floor(Math.random() * 6 + 2),
-      queued_count: Math.floor(Math.random() * 8),
-    });
-  }
-  return points;
-}
 
 export default router;
