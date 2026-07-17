@@ -1,6 +1,6 @@
 import { Group, ActionIcon, Text, Avatar, Menu, useMantineColorScheme } from '@mantine/core';
 import { IconSun, IconMoon, IconLogout, IconSettings } from '@tabler/icons-react';
-import { useAuth } from '@/stores/AuthContext';
+import { useAuth } from '@/stores/useAuth';
 import { useNavigate } from 'react-router-dom';
 
 export function TopBar() {

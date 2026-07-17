@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
+import { createContext, useState, useCallback, type ReactNode } from 'react';
 import type { User } from '@/types';
 
 interface AuthState {
@@ -11,6 +11,7 @@ interface AuthState {
 }
 
 const AuthContext = createContext<AuthState | null>(null);
+export { AuthContext };
 
 const JWT_KEY = 'ultralisk_jwt';
 const USER_KEY = 'ultralisk_user';
@@ -68,10 +69,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
 }

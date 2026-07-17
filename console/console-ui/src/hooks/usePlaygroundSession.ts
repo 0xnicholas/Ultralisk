@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { PlaygroundSession, ChatMessage } from '@/types';
 import { getSessions, saveSession, deleteSession, saveSessions } from '@/utils/storage';
-import { useAuth } from '@/stores/AuthContext';
+import { useAuth } from '@/stores/useAuth';
 import { createSession as apiCreateSession, updateSession as apiUpdateSession, deleteSession as apiDeleteSession, getSessions as fetchBackendSessions } from '@/api/sessions';
 
 function generateId(): string { return `session_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`; }
@@ -39,32 +39,61 @@ export function usePlaygroundSession(initialModelId = 'llama-3.1-8b-instruct') {
       apiCreateSession({ name: session.name, model_id: session.modelId }).catch(() => {});
     }
     return session;
-  }, [initialModelId]);
+  }, [initialModelId, user]);
 
   const addMessage = useCallback((sessionId: string, msg: ChatMessage) => {
-    setSessions((prev) => prev.map((s) => { if (s.id !== sessionId) return s; const updated = { ...s, messages: [...s.messages, msg], updatedAt: new Date().toISOString() }; saveSession(updated); if (user) { apiUpdateSession(sessionId, { messages: updated.messages as any }).catch(() => {}); } return updated; }));
-  }, []);
+    setSessions((prev) => prev.map((s) => {
+      if (s.id !== sessionId) return s;
+      const updated = { ...s, messages: [...s.messages, msg], updatedAt: new Date().toISOString() };
+      saveSession(updated);
+      if (user) { apiUpdateSession(sessionId, { messages: updated.messages as any }).catch(() => {}); }
+      return updated;
+    }));
+  }, [user]);
 
   const updateLastAssistant = useCallback((sessionId: string, content: string) => {
-    setSessions((prev) => prev.map((s) => { if (s.id !== sessionId) return s; const msgs = [...s.messages];
-      if (msgs.length > 0 && msgs[msgs.length - 1].role === 'assistant') msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content };
-      else msgs.push({ role: 'assistant', content }); const updated = { ...s, messages: msgs, updatedAt: new Date().toISOString() }; saveSession(updated); return updated; }));
+    setSessions((prev) => prev.map((s) => {
+      if (s.id !== sessionId) return s;
+      const msgs = [...s.messages];
+      if (msgs.length > 0 && msgs[msgs.length - 1].role === 'assistant') {
+        msgs[msgs.length - 1] = { ...msgs[msgs.length - 1], content };
+      } else {
+        msgs.push({ role: 'assistant', content });
+      }
+      const updated = { ...s, messages: msgs, updatedAt: new Date().toISOString() };
+      saveSession(updated);
+      return updated;
+    }));
   }, []);
 
   const renameSession = useCallback((sessionId: string, name: string) => {
-    setSessions((prev) => prev.map((s) => { if (s.id !== sessionId) return s; const updated = { ...s, name }; saveSession(updated); return updated; }));
+    setSessions((prev) => prev.map((s) => {
+      if (s.id !== sessionId) return s;
+      const updated = { ...s, name };
+      saveSession(updated);
+      return updated;
+    }));
   }, []);
 
   const removeSession = useCallback((sessionId: string) => {
-    setSessions((prev) => prev.filter((s) => s.id !== sessionId)); deleteSession(sessionId);
+    setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+    deleteSession(sessionId);
     if (user) {
       apiDeleteSession(sessionId).catch(() => {});
     }
-    if (sessionId === activeId) setActiveId((prev) => { const remaining = getSessions(); return remaining.length > 0 ? remaining[0].id : ''; });
-  }, [activeId]);
+    if (sessionId === activeId) {
+      const remaining = getSessions();
+      setActiveId(remaining.length > 0 ? remaining[0].id : '');
+    }
+  }, [activeId, user]);
 
   const changeModel = useCallback((sessionId: string, modelId: string) => {
-    setSessions((prev) => prev.map((s) => { if (s.id !== sessionId) return s; const updated = { ...s, modelId }; saveSession(updated); return updated; }));
+    setSessions((prev) => prev.map((s) => {
+      if (s.id !== sessionId) return s;
+      const updated = { ...s, modelId };
+      saveSession(updated);
+      return updated;
+    }));
   }, []);
 
   return { sessions, activeId, activeSession, setActiveId, createSession, addMessage, updateLastAssistant, renameSession, removeSession, changeModel };

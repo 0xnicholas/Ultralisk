@@ -1,4 +1,4 @@
-import { Button, TextInput, Text, Group, Alert, Code, Badge, Stack } from '@mantine/core';
+import { Button, TextInput, Text, Group, Alert, Code, Stack } from '@mantine/core';
 import { IconCircleCheck, IconAlertCircle, IconSearch } from '@tabler/icons-react';
 import { useState } from 'react';
 

@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Container, Paper, Title, PasswordInput, Button, Text, Stack, Alert } from '@mantine/core';
 import { IconAlertCircle } from '@tabler/icons-react';
-import { useAuth } from '@/stores/AuthContext';
+import { useAuth } from '@/stores/useAuth';
 
 export function AcceptInvitationPage() {
   const { acceptInvitation } = useAuth();

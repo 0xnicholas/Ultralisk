@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Container, Paper, Title, TextInput, PasswordInput, Button, Text, Stack, Alert, Divider } from '@mantine/core';
 import { IconAlertCircle, IconBug } from '@tabler/icons-react';
-import { useAuth } from '@/stores/AuthContext';
+import { useAuth } from '@/stores/useAuth';
 
 export function LoginPage() {
   const { login } = useAuth();

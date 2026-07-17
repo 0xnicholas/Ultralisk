@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Container, Title, Text, Paper, Stepper, Group, Button, Center, Stack, Code, Alert } from '@mantine/core';
+import { Container, Title, Text, Paper, Stepper, Group, Button, Center, Stack, Alert } from '@mantine/core';
 import { IconCheck, IconCircleCheck } from '@tabler/icons-react';
 import { K8sStep } from '@/private/components/setup/K8sStep';
 import { StorageStep } from '@/private/components/setup/StorageStep';

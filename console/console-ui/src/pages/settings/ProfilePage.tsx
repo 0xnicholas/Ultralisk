@@ -7,7 +7,7 @@ import {
   SegmentedControl,
   useMantineColorScheme,
 } from '@mantine/core';
-import { useAuth } from '@/stores/AuthContext';
+import { useAuth } from '@/stores/useAuth';
 import { useState } from 'react';
 
 export function ProfilePage() {

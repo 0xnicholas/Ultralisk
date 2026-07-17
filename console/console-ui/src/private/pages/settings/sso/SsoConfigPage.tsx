@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Title, Paper, Text, Group, Button, Stack, TextInput, Textarea, Select, Switch, Alert, Code, Badge } from '@mantine/core';
-import { IconCircleCheck, IconAlertCircle, IconBrandOpenSource, IconRefresh } from '@tabler/icons-react';
+import { IconCircleCheck, IconRefresh } from '@tabler/icons-react';
 
 type SsoProvider = 'saml' | 'oidc';
 
