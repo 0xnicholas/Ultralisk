@@ -52,7 +52,8 @@ wait_for_port() {
 
 start_one() {
   local name="$1" dir="$2" cmd="$3" log="$4" pid_file="$5" port="$6"
-  local envs="${7:-}"
+  shift 6
+  # Remaining args are KEY=VALUE env pairs to set before launch.
 
   if is_running "$pid_file"; then
     yellow "[dev-start] $name already running (pid $(cat "$pid_file"), log: $log)"
@@ -70,8 +71,9 @@ start_one() {
   : > "$log"
   (
     cd "$dir"
-    # shellcheck disable=SC2086
-    env $envs nohup bash -c "$cmd" >> "$log" 2>&1 &
+    # Pass KEY=VALUE pairs as real env to the child, so the parent shell's
+    # leaked env (DATABASE_URL, etc.) does not override them.
+    env "$@" nohup bash -c "$cmd" >> "$log" 2>&1 &
   )
   # Capture the actual port-owning PID (pnpm/npx spawn a child; $! races with that)
   local tries=40
@@ -89,12 +91,18 @@ start_one() {
 }
 
 # --- API ---------------------------------------------------------------------
-API_ENVS="DATABASE_URL=${DATABASE_URL:-postgres://postgres:postgres@localhost:5432/ultralisk_console} JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production} DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-saas}"
-start_one "console-api" "$API_DIR" "pnpm dev" "$API_LOG" "$API_PID_FILE" "$API_PORT" "$API_ENVS"
+# We always pin DATABASE_URL to the local ultralisk_console database. We
+# deliberately do NOT inherit it from the parent shell — users typically
+# have unrelated DATABASE_URL set (e.g. for a sibling project on a different
+# port) that would silently route the API at the wrong schema.
+start_one "console-api" "$API_DIR" "pnpm dev" "$API_LOG" "$API_PID_FILE" "$API_PORT" \
+  "DATABASE_URL=postgres://postgres:postgres@localhost:5432/ultralisk_console" \
+  "JWT_SECRET=${JWT_SECRET:-dev-secret-change-in-production}" \
+  "DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-saas}"
 
 # --- UI ----------------------------------------------------------------------
-UI_ENVS="DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-saas}"
-start_one "console-ui" "$UI_DIR" "pnpm dev" "$UI_LOG" "$UI_PID_FILE" "$UI_PORT" "$UI_ENVS"
+start_one "console-ui" "$UI_DIR" "pnpm dev" "$UI_LOG" "$UI_PID_FILE" "$UI_PORT" \
+  "DEPLOYMENT_MODE=${DEPLOYMENT_MODE:-saas}"
 
 echo
 green "[dev-start] up."
