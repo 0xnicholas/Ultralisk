@@ -91,6 +91,38 @@ pub fn upsert_pod(model_id: &str, pool_name: &str, strategy: &str, pod_id: &str,
     );
 }
 
+/// Update a pod's weight for A/B testing or canary deployments.
+/// Returns true if the pod was found and updated.
+pub fn update_weight(model_id: &str, pod_id: &str, new_weight: u32) -> bool {
+    let current = ROUTE_TABLE.load();
+    let mut routes = current.routes.clone();
+
+    let pool = match routes.get_mut(model_id) {
+        Some(p) => p,
+        None => return false,
+    };
+    let pod = match pool.pods.iter_mut().find(|p| p.id == pod_id) {
+        Some(p) => p,
+        None => return false,
+    };
+
+    pod.weight = new_weight;
+    let new_version = current.version + 1;
+    ROUTE_TABLE.store(Arc::new(RouteTable {
+        routes,
+        version: new_version,
+    }));
+
+    tracing::info!(
+        model_id = %model_id,
+        pod_id = %pod_id,
+        new_weight = new_weight,
+        version = new_version,
+        "Pod weight updated"
+    );
+    true
+}
+
 /// Remove a pod from the route table dynamically.
 pub fn remove_pod(model_id: &str, pod_id: &str) {
     let current = ROUTE_TABLE.load();
@@ -155,6 +187,50 @@ pub fn load_route_table(path: &str) -> RouteTable {
 mod tests {
     use super::*;
     use std::io::Write;
+
+    #[test]
+    fn test_update_weight() {
+        // Load a route table, update a pod weight, verify
+        let json = r#"{
+            "version": 1,
+            "routes": {
+                "test-model": {
+                    "name": "test-pool",
+                    "strategy": "serverless",
+                    "pods": [
+                        {"id": "a", "address": "10.0.0.1:8000", "weight": 1},
+                        {"id": "b", "address": "10.0.0.2:8000", "weight": 1}
+                    ]
+                }
+            }
+        }"#;
+        let mut file = tempfile::NamedTempFile::new().unwrap();
+        file.write_all(json.as_bytes()).unwrap();
+        let path = file.path().to_str().unwrap();
+        let table = load_route_table(path);
+        ROUTE_TABLE.store(Arc::new(table));
+
+        assert!(update_weight("test-model", "a", 5));
+        assert!(update_weight("test-model", "b", 1));
+
+        let table = ROUTE_TABLE.load();
+        let pool = table.routes.get("test-model").unwrap();
+        let pod_a = pool.pods.iter().find(|p| p.id == "a").unwrap();
+        let pod_b = pool.pods.iter().find(|p| p.id == "b").unwrap();
+        assert_eq!(pod_a.weight, 5);
+        assert_eq!(pod_b.weight, 1);
+    }
+
+    #[test]
+    fn test_update_weight_unknown_pod_returns_false() {
+        let json = r#"{"version": 1, "routes": {"m": {"name": "p", "strategy": "s", "pods": []}}}"#;
+        let mut file = tempfile::NamedTempFile::new().unwrap();
+        file.write_all(json.as_bytes()).unwrap();
+        let table = load_route_table(file.path().to_str().unwrap());
+        ROUTE_TABLE.store(Arc::new(table));
+        assert!(!update_weight("m", "ghost", 10));
+        assert!(!update_weight("ghost", "a", 1));
+    }
 
     #[test]
     fn test_deserialize_empty() {

@@ -5,7 +5,7 @@ use axum::{
     extract::{Extension, Path, State},
     middleware,
     response::{IntoResponse, Response},
-    routing::{any, get, post},
+    routing::{any, get, patch, post},
     Json, Router,
 };
 use redis::aio::MultiplexedConnection;
@@ -53,6 +53,9 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
 
     // Start file watcher for hot-reload
     let _watcher_shutdown = crate::route::watcher::start_watcher(config.route_table_path.clone());
+
+    // Start K8s CRD watcher (no-op until kube crate is added)
+    let _kube_shutdown = crate::route::kube_watcher::start_kube_watcher().await;
 
     let auth_state = AuthState::new(&config, redis_conn.clone());
     let proxy_state = ProxyState::new(config.upstream_timeout_secs);
@@ -124,6 +127,7 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
     let internal_router = Router::new()
         .route("/v1/internal/models/{model_id}/ready", post(model_ready_handler))
         .route("/v1/internal/batch/enqueue", post(internal_batch_handler))
+        .route("/v1/internal/route-table/weight", patch(weight_update_handler))
         .with_state(app_state.clone());
 
     let infra_router = Router::new()
@@ -319,6 +323,34 @@ async fn model_ready_handler(
     crate::cold_start::COLD_START_QUEUES.notify_ready(&model_id).await;
 
     Ok(Json(serde_json::json!({"status": "ok", "model_id": model_id})))
+}
+
+// --- Weight update handler (A/B testing) ---
+
+#[derive(Deserialize)]
+struct WeightUpdateRequest {
+    model_id: String,
+    pod_id: String,
+    weight: u32,
+}
+
+async fn weight_update_handler(
+    Json(body): Json<WeightUpdateRequest>,
+) -> Result<impl IntoResponse, AppError> {
+    let updated = table::update_weight(&body.model_id, &body.pod_id, body.weight);
+    if updated {
+        Ok(Json(serde_json::json!({
+            "status": "ok",
+            "model_id": body.model_id,
+            "pod_id": body.pod_id,
+            "weight": body.weight
+        })))
+    } else {
+        Err(AppError::InvalidRequest(format!(
+            "Pod {} not found in model {}",
+            body.pod_id, body.model_id
+        )))
+    }
 }
 
 // --- Warmup handler ---
