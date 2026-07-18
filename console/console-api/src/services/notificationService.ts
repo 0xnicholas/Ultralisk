@@ -8,14 +8,10 @@
 
 import pool from '../db/index.js';
 import { logger } from '../logger.js';
+import { DEFAULT_BUDGET_USD, DEFAULT_ALERT_THRESHOLDS } from '../constants.js';
+import type { ThresholdConfig } from '../constants.js';
 
 // ── Types ────────────────────────────────────────────────────────────────────
-
-export interface ThresholdConfig {
-  label: string;
-  type: 'percent' | 'gpu_util';
-  value: number;
-}
 
 export interface BudgetAlertSettings {
   orgId: string;
@@ -44,15 +40,11 @@ export async function getBudgetAlertSettings(orgId: string): Promise<BudgetAlert
   const r = rows[0];
   return {
     orgId: r.org_id,
-    budgetUsd: Number(r.budget_usd) || 25000,
+    budgetUsd: Number(r.budget_usd) || DEFAULT_BUDGET_USD,
     alertsEnabled: r.alerts_enabled,
     channels: r.channels || ['email'],
     suppressionWindowMinutes: r.suppression_window_minutes || 30,
-    thresholds: r.thresholds || [
-      { label: '70% warning', type: 'percent', value: 70 },
-      { label: '90% critical', type: 'percent', value: 90 },
-      { label: 'GPU utilization >85%', type: 'gpu_util', value: 85 },
-    ],
+    thresholds: r.thresholds || DEFAULT_ALERT_THRESHOLDS,
   };
 }
 
@@ -256,5 +248,28 @@ export async function checkAndSendBudgetAlerts(orgId: string): Promise<void> {
         await logNotification(orgId, threshold, 'slack', currentSpend);
       }
     }
+  }
+}
+
+// ── Startup dependency check ───────────────────────────────────────────────────
+
+/**
+ * Check that optional notification dependencies are available.
+ * Called once at boot from index.ts. Logs a warning in production
+ * when nodemailer is not installed and SMTP is configured.
+ */
+export async function checkNotificationDependencies(): Promise<void> {
+  if (!IS_PROD) return;
+  if (!process.env.SMTP_HOST) return; // SMTP not configured, no dependency needed
+
+  try {
+    // @ts-expect-error -- optional dependency, catch handles missing module.
+    await import('nodemailer');
+    logger.info('nodemailer available for email notifications');
+  } catch {
+    logger.warn(
+      'nodemailer is not installed. Email notifications will fall back to logging. ' +
+      'Run: npm install nodemailer'
+    );
   }
 }

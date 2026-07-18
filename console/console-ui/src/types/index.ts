@@ -329,7 +329,7 @@ export interface Incident {
   id: string; severity: 'critical' | 'warning'; status: 'open' | 'investigating' | 'mitigated' | 'resolved' | 'suppressed';
   title: string; description: string; detection_type: string;
   affected_entities: { cluster_id?: string; node_id?: string; model_id?: string; endpoint_id?: string; };
-  ai_analysis: { model_used: string; completed_at: string; root_causes: IncidentRootCause[]; recommendations: IncidentRecommendation[]; };
+  ai_analysis: { model_used: string; completed_at: string; root_causes: IncidentRootCause[]; recommendations: IncidentRecommendation[]; summary: string; };
   conversation_history: IncidentConversation[];
   action_log: IncidentActionLog[];
   triggered_at: string; mitigated_at: string | null; resolved_at: string | null; suppressed_at: string | null;

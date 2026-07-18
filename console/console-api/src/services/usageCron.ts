@@ -140,15 +140,21 @@ export function startUsageCron(): void {
   }, 3600000);
   timer.unref();
 
-  // Release the lock on shutdown so a fresh process can take over immediately.
-  const release = async () => {
-    if (cronOwner) {
-      try {
-        await pool.query('SELECT pg_advisory_unlock($1)', [CRON_LOCK_KEY]);
-      } catch { /* ignore */ }
-      cronOwner = false;
-    }
-  };
-  process.once('SIGINT', () => { release(); process.exit(0); });
-  process.once('SIGTERM', () => { release(); process.exit(0); });
+  // Note: advisory lock release is handled by index.ts shutdown()
+  // via releaseUsageCronLock() — we don't register process handlers
+  // here to avoid overriding index.ts's graceful shutdown (which calls
+  // pool.end()).
+}
+
+/**
+ * Release the advisory lock so a fresh process can take over immediately.
+ * Called by index.ts shutdown() before pool.end().
+ */
+export async function releaseUsageCronLock(): Promise<void> {
+  if (cronOwner) {
+    try {
+      await pool.query('SELECT pg_advisory_unlock($1)', [CRON_LOCK_KEY]);
+    } catch { /* ignore */ }
+    cronOwner = false;
+  }
 }

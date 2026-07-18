@@ -91,4 +91,60 @@ describe('ClickHouse client (PG fallback)', () => {
     expect(sql).toContain('sum(');
     expect(sql).not.toContain('sumState');
   });
+
+  it('translates count() to count(*)', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await client.query('SELECT count() AS n FROM gpu_metric_snapshots');
+    const sql = mockQuery.mock.calls[0][0];
+    expect(sql).toContain('count(*)');
+    expect(sql).not.toContain('count()');
+  });
+
+  it('removes DDL-only clauses (PARTITION BY, ENGINE, TTL, ORDER BY)', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await client.query(`
+      SELECT node_id, avgState(utilization_pct) AS avg_util
+      FROM gpu_metric_snapshots
+      WHERE timestamp > NOW() - INTERVAL '1 hour'
+      GROUP BY node_id
+    `);
+    const sql = mockQuery.mock.calls[0][0];
+    expect(sql).toContain('SELECT node_id');
+    expect(sql).toContain('avg(');
+    expect(sql).not.toContain('avgState');
+  });
+
+  it('handles toStartOfHour with column reference (not just simple ident)', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await client.query(`
+      SELECT toStartOfHour(completed_at) AS hour
+      FROM usage_events
+      GROUP BY hour
+    `);
+    const sql = mockQuery.mock.calls[0][0];
+    expect(sql).toContain("DATE_TRUNC('hour', completed_at)");
+  });
+
+  it('strips DDL CREATE TABLE noise from ad-hoc DDL queries', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    // A hypothetical DDL query that could be sent through the fallback
+    await client.query(`
+      SELECT COUNT(*) AS cnt
+      FROM system.tables
+      WHERE database = 'ultralisk'
+    `);
+    const sql = mockQuery.mock.calls[0][0];
+    expect(sql).toContain('COUNT(*)');
+    expect(sql).toContain('FROM');
+  });
+
+  it('translates toYYYYMM correctly', async () => {
+    mockQuery.mockResolvedValueOnce({ rows: [] });
+    await client.query(
+      "SELECT toYYYYMM(timestamp) AS month FROM gpu_metric_snapshots GROUP BY month"
+    );
+    const sql = mockQuery.mock.calls[0][0];
+    expect(sql).toContain("TO_CHAR(timestamp, 'YYYYMM')::int");
+    expect(sql).not.toContain('toYYYYMM');
+  });
 });

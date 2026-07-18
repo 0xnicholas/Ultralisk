@@ -42,33 +42,45 @@ export interface ClickHouseClient {
  * still require ClickHouse.
  */
 function pgQuery(sql: string, _params?: Record<string, unknown>): Promise<QueryResult> {
-  // Translate ClickHouse SQL dialect to PostgreSQL
+  // Translate ClickHouse SQL dialect to PostgreSQL.
+  // The pipeline handles both DDL patterns (CREATE TABLE) and SELECT queries.
   let pgSql = sql
-    // Remove TTL expressions (not supported in PG)
-    .replace(/TTL\s+.*?(?=\n|$)/g, '')
-    // Remove PARTITION BY
-    .replace(/PARTITION\s+BY\s+\S+/gi, '')
-    // Replace MergeTree engine references
-    .replace(/\bMergeTree\b/gi, '')
-    .replace(/\bReplacingMergeTree\b\s*\([^)]*\)/gi, '')
-    .replace(/\bAggregatingMergeTree\b/gi, '')
-    // Replace toStartOfHour() with DATE_TRUNC
-    .replace(/toStartOfHour\((\w+)\)/gi, "DATE_TRUNC('hour', $1)")
-    // Replace toYYYYMM() with TO_CHAR
-    .replace(/toYYYYMM\((\w+)\)/gi, "TO_CHAR($1, 'YYYYMM')::int")
-    // Replace toStartOfMonth()
-    .replace(/toStartOfMonth\((\w+)\)/gi, "DATE_TRUNC('month', $1)")
-    // Handle avgState / sumState / minState / maxState aggregates
+    // ── SELECT query translation (must run before DDL cleanup to avoid
+    //     clobbering count() → count(*) and aggregate patterns) ──
+    // Replace toStartOfHour(expr) with DATE_TRUNC('hour', expr)
+    .replace(/toStartOfHour\(([^)]+)\)/gi, "DATE_TRUNC('hour', $1)")
+    // Replace toStartOfMonth(expr) with DATE_TRUNC('month', expr)
+    .replace(/toStartOfMonth\(([^)]+)\)/gi, "DATE_TRUNC('month', $1)")
+    // Replace toYYYYMM(expr) with TO_CHAR(expr, 'YYYYMM')::int
+    .replace(/toYYYYMM\(([^)]+)\)/gi, "TO_CHAR($1, 'YYYYMM')::int")
+    // Handle ClickHouse State aggregate functions (avgState → avg, etc.)
     .replace(/\b(avg|sum|min|max)State\s*\(/gi, '$1(')
-    // Remove _inserted_at from SELECT (PG may not have it)
-    .replace(/,\s*_inserted_at/gi, '')
-    // Remove ORDER BY clauses that reference _inserted_at
-    .replace(/ORDER BY\s+\([^)]*_inserted_at[^)]*\)/gi, '')
-    // Remove ENGINE clauses
-    .replace(/ENGINE\s*=\s*\w+\s*(\([^)]*\))?/gi, '')
-    // Clean up empty parentheses
-    .replace(/\(\s*\)/g, '')
+    // Handle count() without arguments (valid in CH, needs * in PG)
+    .replace(/\bcount\(\)/gi, 'count(*)')
+    // Remove _inserted_at from SELECT lists
+    .replace(/,\s*_inserted_at\b/gi, '')
     .trim();
+
+  // ── DDL cleanup (safe for SELECT-only queries too) ──
+  pgSql = pgSql
+    // Remove TTL entire clause (ends at `;` or line end)
+    .replace(/TTL\s+.*?(?:;|\n|$)/g, '')
+    // Remove PARTITION BY with function-call or parenthesized expression
+    .replace(/PARTITION\s+BY\s+(?:\([^)]*\)|\S+)/gi, '')
+    // Remove DDL ORDER BY with parenthesized column list (e.g. ORDER BY (a, b, c))
+    .replace(/ORDER\s+BY\s+\([^)]+\)/gi, '')
+    // Replace MergeTree engine references, including empty parens:
+    //   ENGINE = MergeTree()          → ENGINE =
+    //   ENGINE = ReplacingMergeTree(x) → ENGINE =
+    //   ENGINE = AggregatingMergeTree() → ENGINE =
+    .replace(/\b(?:Replacing)?(?:Aggregating)?MergeTree\s*\([^)]*\)/gi, '')
+    .replace(/\b(?:Replacing)?(?:Aggregating)?MergeTree\b/gi, '')
+    // Remove bare ENGINE = type clause (WITHOUT touching SELECT aliases or count())
+    .replace(/ENGINE\s*=\s*\w+(?:\s*\([^)]*\))?/gi, '')
+    .trim();
+
+  // Remove leftover standalone ORDER BY that became empty (rare edge case)
+  pgSql = pgSql.replace(/ORDER\s+BY\s*$/gi, '').trim();
 
   // For INSERT queries, delegate to PG directly
   if (/^INSERT\s+INTO/i.test(pgSql)) {

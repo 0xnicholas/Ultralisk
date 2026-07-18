@@ -1,5 +1,9 @@
 -- Migration 008: Budget alert settings and notification tracking
 -- Supports per-org budget configuration with dedup notification log
+--
+-- KEEP IN SYNC:
+--   budget_usd     DEFAULT 25000.0  ↔ src/constants.ts DEFAULT_BUDGET_USD
+--   thresholds     DEFAULT [...]   ↔ src/constants.ts DEFAULT_ALERT_THRESHOLDS
 
 -- === Per-org budget alert configuration ===
 -- Each org has exactly one settings row (UNIQUE on org_id).

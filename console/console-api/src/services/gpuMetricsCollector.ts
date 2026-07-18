@@ -22,7 +22,13 @@ import { logger } from '../logger.js';
 // ── Configuration ────────────────────────────────────────────────────────────
 
 const INTERVAL_MS = Number(process.env.GPU_METRICS_INTERVAL_MS) || 300_000; // 5 min
-const IS_SIMULATOR = process.env.GPU_METRICS_SIMULATOR !== 'false'; // enabled by default
+const IS_SIMULATOR = (() => {
+  if (process.env.GPU_METRICS_SIMULATOR !== undefined) {
+    return process.env.GPU_METRICS_SIMULATOR === 'true';
+  }
+  // Default: enabled in dev, disabled in production
+  return process.env.NODE_ENV !== 'production';
+})()
 
 // Per-card state for smooth deltas (avoids jarring jumps)
 interface CardState {
@@ -141,7 +147,7 @@ export function startGpuMetricsCollector(): void {
   cronStarted = true;
 
   if (!IS_SIMULATOR) {
-    logger.info('GPU metrics simulator disabled (GPU_METRICS_SIMULATOR=false). Waiting for external collector.');
+    logger.info('GPU metrics simulator disabled. Set GPU_METRICS_SIMULATOR=true to enable, or deploy an external collector.');
     return;
   }
 

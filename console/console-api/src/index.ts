@@ -31,6 +31,7 @@ import auditLogRoutes from './routes/auditLogs.js';
 import ssoConfigRoutes from './routes/ssoConfig.js';
 import licenseRoutes from './routes/license.js';
 import complianceRoutes from './routes/compliance.js';
+import webhookRoutes from './routes/webhooks.js';
 import healthRoutes from './routes/health.js';
 
 // Mode-specific route modules
@@ -39,32 +40,44 @@ import billingRoutes from './routes/billing.js';
 
 import { migrate } from './db/migrate.js';
 import pool from './db/index.js';
-import { startUsageCron } from './services/usageCron.js';
+import { startUsageCron, releaseUsageCronLock } from './services/usageCron.js';
 import { startGpuMetricsCollector } from './services/gpuMetricsCollector.js';
+import { startIncidentEngine } from './services/incidentEngine.js';
 import { initClickHouse } from './services/clickhouseClient.js';
 import { migrateClickHouse } from './services/clickhouseMigrate.js';
 import { auditMiddleware } from './services/auditLog.js';
 import { authMiddleware } from './middleware/auth.js';
 import { rbacMiddleware } from './middleware/rbac.js';
+import { checkNotificationDependencies } from './services/notificationService.js';
 import { requestIdMiddleware } from './middleware/requestId.js';
 import { logger } from './logger.js';
 
 const app = express();
 app.use(requestIdMiddleware); // before everything so every log line carries req_id
-// CORS: permissive by default (dev / vite proxy). In production, set
-// CORS_ORIGINS=https://console.example.com,https://admin.example.com
-// (comma-separated). Empty value in prod = same-origin only.
+// CORS configuration.
+// In production, set CORS_ORIGINS to a comma-separated list of allowed origins,
+// e.g.: CORS_ORIGINS=https://console.ultralisk.ai,https://admin.ultralisk.ai
+//
+// - Explicit list → only those origins are allowed.
+// - Empty string → cross-origin requests are denied (same-origin only).
+// - Unset (default) → a warning is logged and same-origin is enforced.
+//
+// In development, all origins are allowed (for Vite dev proxy).
 const CORS_ORIGINS = process.env.CORS_ORIGINS;
-if (IS_PROD && CORS_ORIGINS !== undefined) {
+if (!IS_PROD) {
+  app.use(cors({ origin: true, credentials: true }));
+} else if (CORS_ORIGINS !== undefined) {
   const origins = CORS_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean);
+  if (origins.length === 0) {
+    logger.warn('CORS_ORIGINS is set but empty — cross-origin requests will be denied. Remove the env var to suppress this warning.');
+  }
   app.use(cors({
     origin: origins.length === 0 ? false : origins,
     credentials: true,
   }));
-} else if (!IS_PROD) {
-  app.use(cors({ origin: true, credentials: true }));
 } else {
-  // prod + CORS_ORIGINS unset: same-origin only
+  logger.warn('CORS_ORIGINS is not set. Cross-origin requests will be denied. ' +
+    'Set CORS_ORIGINS=https://console.ultralisk.ai,https://admin.ultralisk.ai to allow access from your UI domain(s).');
   app.use(cors({ origin: false, credentials: true }));
 }
 app.use(express.json());
@@ -73,11 +86,17 @@ app.use(express.json());
 migrate().catch((err) => logger.error({ err }, 'migrate failed at boot'));
 startUsageCron();
 startGpuMetricsCollector();
+startIncidentEngine();
 
 // Initialize ClickHouse asynchronously (non-blocking — falls back to PG)
 initClickHouse()
   .then(() => migrateClickHouse())
   .catch((err) => logger.error({ err }, 'ClickHouse init failed'));
+
+// Check optional notification dependencies at boot
+checkNotificationDependencies().catch((err) =>
+  logger.error({ err }, 'notification dependency check failed')
+);
 
 // Audit logging middleware (logs mutating requests)
 app.use('/v1/admin', auditMiddleware);
@@ -90,11 +109,18 @@ const PUBLIC_ADMIN_PATHS = new Set([
   '/auth/accept-invitation',
 ]);
 
+// Webhook paths that must remain unauthenticated (signed by external systems)
+const WEBHOOK_PATHS = [
+  '/webhooks/prometheus/alert',
+];
+
 app.use((req, res, next) => {
   if (req.path === '/' || req.path === '/index.html') return next();
   if (req.path.startsWith('/v1/admin/') || req.path === '/v1/admin') {
     const subPath = req.path.replace(/^\/v1\/admin/, '');
     if (PUBLIC_ADMIN_PATHS.has(subPath)) return next();
+    // Webhook paths are unauthenticated — signed by external systems
+    if (WEBHOOK_PATHS.some((p) => subPath.startsWith(p))) return next();
     return authMiddleware(req, res, next);
   }
   if (req.path.startsWith('/v1/playground') || req.path === '/v1/playground') {
@@ -159,6 +185,9 @@ app.use('/v1/admin', ssoConfigRoutes);
 app.use('/v1/admin', licenseRoutes);
 app.use('/v1/admin', complianceRoutes);
 
+// === Webhook routes (no auth — signed by Alertmanager config) ===
+app.use('/v1/admin', webhookRoutes);
+
 // === SaaS-specific routes ===
 if (DEPLOYMENT_MODE === 'saas') {
   app.use('/v1/admin', apiKeyRoutes);
@@ -188,6 +217,8 @@ server.on('error', (err: NodeJS.ErrnoException) => {
 async function shutdown(signal: string) {
   logger.info({ signal }, 'shutting down');
   server.close(async () => {
+    // Release PG advisory locks held by the usage cron before closing the pool
+    await releaseUsageCronLock();
     try { await pool.end(); } catch (err) { logger.error({ err }, 'pool.end failed during shutdown'); }
     process.exit(0);
   });

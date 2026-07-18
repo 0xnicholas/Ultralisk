@@ -13,16 +13,16 @@ router.patch('/organization', async (req: Request, res: Response) => {
     let idx = 2;
 
     if (name !== undefined) { updates.push(`name = $${idx++}`); values.push(name); }
-    if (billing_email !== undefined) { updates.push(`slug = $${idx++}`); values.push(billing_email); } // TODO: add dedicated billing_email column
+    if (billing_email !== undefined) { updates.push(`billing_email = $${idx++}`); values.push(billing_email); }
 
     if (updates.length === 0) {
-      const { rows: [org] } = await pool.query('SELECT id, name, slug, created_at FROM orgs WHERE id = $1', [orgId]);
+      const { rows: [org] } = await pool.query('SELECT id, name, slug, billing_email, created_at FROM orgs WHERE id = $1', [orgId]);
       if (!org) return res.status(404).json({ error: { code: 'not_found', message: 'Organization not found' } });
       return res.json({ data: mapOrg(org) });
     }
 
     const { rows: [org] } = await pool.query(
-      `UPDATE orgs SET ${updates.join(', ')} WHERE id = $1 RETURNING id, name, slug, created_at`, values
+      `UPDATE orgs SET ${updates.join(', ')} WHERE id = $1 RETURNING id, name, slug, billing_email, created_at`, values
     );
     if (!org) return res.status(404).json({ error: { code: 'not_found', message: 'Organization not found' } });
     res.json({ data: mapOrg(org) });
@@ -31,8 +31,10 @@ router.patch('/organization', async (req: Request, res: Response) => {
 
 function mapOrg(r: any) {
   return {
-    id: r.id, name: r.name,
-    billing_email: r.slug, // TODO: add dedicated column
+    id: r.id,
+    name: r.name,
+    slug: r.slug,
+    billing_email: r.billing_email || r.slug,
     plan: 'free',
     created_at: r.created_at,
   };

@@ -27,8 +27,20 @@ export function IncidentList() {
       <Table.Td><Text size="xs" c="dimmed">{inc.detection_type.replace(/_/g, ' ')}</Text></Table.Td>
       <Table.Td>
         {inc.ai_analysis?.root_causes?.[0]
-          ? <Group gap={4}><Text size="xs">{inc.ai_analysis.root_causes[0].cause.slice(0, 40)}...</Text><Text size="xs" c="dimmed">({Math.round(inc.ai_analysis.root_causes[0].confidence * 100)}%)</Text></Group>
-          : <Text size="xs" c="dimmed">Analyzing...</Text>}
+          ? <Group gap={4}>
+              <Badge size="xs" color="green" variant="filled" title="AI analysis ready">AI</Badge>
+              <Text size="xs">{inc.ai_analysis.root_causes[0].cause.slice(0, 40)}...</Text>
+              <Text size="xs" c="dimmed">({Math.round(inc.ai_analysis.root_causes[0].confidence * 100)}%)</Text>
+            </Group>
+          : inc.status === 'open' || inc.status === 'investigating'
+            ? <Group gap={4}>
+                <Badge size="xs" color="yellow" variant="filled" title="AI analysis in progress">...</Badge>
+                <Text size="xs" c="dimmed">Analyzing...</Text>
+              </Group>
+            : <Group gap={4}>
+                <Badge size="xs" color="gray" variant="filled" title="AI analysis skipped">—</Badge>
+                <Text size="xs" c="dimmed">Not analyzed</Text>
+              </Group>}
       </Table.Td>
       <Table.Td><Text size="xs" c="dimmed">{formatRelativeTime(inc.triggered_at)}</Text></Table.Td>
       <Table.Td><Tooltip label="View details"><ActionIcon variant="light" size="sm" onClick={() => navigate(`/incidents/${inc.id}`)}><IconEye size={14} /></ActionIcon></Tooltip></Table.Td>

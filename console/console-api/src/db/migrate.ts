@@ -90,6 +90,8 @@ const MIGRATIONS: Array<{ file: string; label: string }> = [
   { file: '006_model_registry.sql',    label: 'Model registry' },
   { file: '007_audit_logs.sql',        label: 'Audit logs' },
   { file: '008_budget_alerts.sql',    label: 'Budget alerts' },
+  { file: '009_billing_email.sql',   label: 'Billing email column' },
+  { file: '010_alert_fingerprint.sql', label: 'Alert fingerprint + org_id' },
 ];
 
 async function ensureMigrationTable(): Promise<void> {
