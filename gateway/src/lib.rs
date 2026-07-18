@@ -1,6 +1,8 @@
 pub mod config;
 pub mod types;
 pub mod error;
+pub mod health_checker;
+pub mod passive_checker;
 pub mod health;
 pub mod middleware;
 pub mod extract;

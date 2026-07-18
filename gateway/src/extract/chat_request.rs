@@ -21,7 +21,7 @@ where
     type Rejection = Response;
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
-        let (mut parts, body) = req.into_parts();
+        let (parts, body) = req.into_parts();
 
         let bytes = Bytes::from_request(Request::from_parts(parts, body), state)
             .await

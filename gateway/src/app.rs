@@ -18,6 +18,8 @@ use crate::config::AppConfig;
 use crate::error::AppError;
 use crate::extract::chat_request::ChatRequestExtractor;
 use crate::health;
+use crate::health_checker::{HealthChecker, HealthCheckerConfig};
+use crate::passive_checker::{PassiveChecker, PassiveCheckerConfig};
 use crate::middleware::auth::{self, AuthState};
 use crate::middleware::observe;
 use crate::proxy::admin::{self, AdminProxyState};
@@ -35,6 +37,8 @@ pub struct AppState {
     pub config: AppConfig,
     pub pg_pool: Option<sqlx::PgPool>,
     pub batch_aggregator: Arc<BatchAggregator>,
+    pub health_checker: Arc<HealthChecker>,
+    pub passive_checker: Arc<PassiveChecker>,
 }
 
 pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
@@ -42,7 +46,7 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
     let redis_conn = redis_client.get_multiplexed_async_connection().await?;
 
     // Start revocation subscriber (ADR-008: Pub/Sub-based cache invalidation)
-    let revocation_handle = crate::revocation::start_subscriber(
+    let _revocation_handle = crate::revocation::start_subscriber(
         redis_conn.clone(),
         config.redis_url.clone(),
     ).await?;
@@ -52,10 +56,39 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
     tracing::info!("Route table loaded from {}", config.route_table_path);
 
     // Start file watcher for hot-reload
-    let _watcher_shutdown = crate::route::watcher::start_watcher(config.route_table_path.clone());
+    let _watcher = crate::route::watcher::start_watcher(config.route_table_path.clone());
 
     // Start K8s CRD watcher (no-op until kube crate is added)
-    let _kube_shutdown = crate::route::kube_watcher::start_kube_watcher().await;
+    crate::route::kube_watcher::start_kube_watcher().await;
+
+    // Start active health checker (polls backend pods every 5s)
+    let health_checker = Arc::new(HealthChecker::new(HealthCheckerConfig {
+        interval_secs: config.health_check_interval_secs,
+        timeout_secs: config.health_check_timeout_secs,
+        ..Default::default()
+    }));
+    let _health_handle = health_checker.clone().start();
+    tracing::info!(
+        interval_secs = %config.health_check_interval_secs,
+        timeout_secs = %config.health_check_timeout_secs,
+        "Active health checker started"
+    );
+
+    // Start passive health checker (observes request outcomes)
+    let passive_checker = Arc::new(PassiveChecker::new(
+        PassiveCheckerConfig {
+            window_size: config.passive_check_window_size as usize,
+            error_threshold: config.passive_check_error_threshold,
+            latency_threshold_ms: config.passive_check_latency_threshold_ms,
+            min_samples: config.passive_check_min_samples as usize,
+            cooldown_secs: config.passive_check_cooldown_secs,
+            breaker_trip_count: config.breaker_trip_count as u32,
+            breaker_cooldown_secs: config.breaker_cooldown_secs,
+            breaker_probe_timeout_secs: config.breaker_probe_timeout_secs,
+        },
+        health_checker.clone(),
+    ));
+    tracing::info!("Passive health checker started");
 
     let auth_state = AuthState::new(&config, redis_conn.clone());
     let proxy_state = ProxyState::new(config.upstream_timeout_secs);
@@ -90,6 +123,8 @@ pub async fn build(config: AppConfig) -> anyhow::Result<Router> {
         config: config.clone(),
         pg_pool,
         batch_aggregator,
+        health_checker,
+        passive_checker,
     };
 
     let recorder = metrics_exporter_prometheus::PrometheusBuilder::new().build_recorder();
@@ -199,9 +234,15 @@ async fn chat_handler(
 
     let request_id = uuid::Uuid::now_v7().to_string();
     let started_at = chrono::Utc::now();
+    let upstream_start = std::time::Instant::now();
+
+    // Save pod info before moving route_info
+    let model_id = route_info.model_id.clone();
+    let pool_name = route_info.pool_name.clone();
+    let pod_id = route_info.pod_address.clone();
 
     // 3. Strategy-based routing
-    match route_info.strategy.as_str() {
+    let result = match route_info.strategy.as_str() {
         "batch" => {
             state.batch_aggregator
                 .enqueue(route_info, auth, chat_extractor.raw_body, request_id, started_at)
@@ -221,17 +262,52 @@ async fn chat_handler(
                 ).await
             }
         }
+    };
+
+    // Report outcome to passive health checker
+    let latency_ms = upstream_start.elapsed().as_millis() as u64;
+    match &result {
+        Ok(_) => {
+            state.passive_checker.report_outcome(
+                &model_id, &pool_name, &pod_id,
+                crate::passive_checker::Outcome::Success { latency_ms },
+            ).await;
+        }
+        Err(err) => {
+            let is_timeout = matches!(err, AppError::UpstreamError(_))
+                && err.to_string().contains("timeout");
+            if is_timeout {
+                state.passive_checker.report_outcome(
+                    &model_id, &pool_name, &pod_id,
+                    crate::passive_checker::Outcome::Timeout { latency_ms },
+                ).await;
+            } else {
+                state.passive_checker.report_outcome(
+                    &model_id, &pool_name, &pod_id,
+                    crate::passive_checker::Outcome::Failure {
+                        latency_ms,
+                        error: err.to_string(),
+                    },
+                ).await;
+            }
+        }
     }
+
+    result
 }
 
 /// Resolve model → route_info, with cold start fallback for empty pools.
+/// Uses health-aware routing when the health checker is available.
 /// Phase 1 M3: When pool is empty, enqueue in cold start queue, trigger KAI,
 /// wait for model ready, then re-resolve.
 async fn resolve_with_cold_start(
     state: &AppState,
     model_id: &str,
 ) -> Result<crate::types::RouteInfo, AppError> {
-    match resolver::resolve(model_id) {
+    // Try health-aware resolution first
+    let resolve_result = resolver::resolve_healthy(model_id, &state.health_checker);
+
+    match resolve_result {
         Ok(route) => return Ok(route),
         Err((status, _)) if status.as_u16() == 503 => {
             // Pool is empty — cold start path
@@ -259,8 +335,8 @@ async fn resolve_with_cold_start(
                 .wait_for_ready(model_id, timeout)
                 .await?;
 
-            // Re-resolve — if still empty, KAI didn't provision in time
-            resolver::resolve(model_id).map_err(|(status, _code)| {
+            // Re-resolve with health awareness — if still empty, KAI didn't provision in time
+            resolver::resolve_healthy(model_id, &state.health_checker).map_err(|(status, _code)| {
                 match status.as_u16() {
                     404 => AppError::ModelNotFound(model_id.to_string()),
                     503 => AppError::ColdStartTimeout,

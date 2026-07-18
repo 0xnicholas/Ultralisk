@@ -31,7 +31,7 @@ struct BatchEntry {
 pub struct BatchAggregator {
     slots: Mutex<HashMap<String, BatchSlot>>,
     window_duration: Duration,
-    max_requests: usize,
+    _max_requests: usize,
     proxy_state: ProxyState,
     pg_pool: Option<sqlx::PgPool>,
     redis: MultiplexedConnection,
@@ -49,7 +49,7 @@ impl BatchAggregator {
         Arc::new(Self {
             slots: Mutex::new(HashMap::new()),
             window_duration: Duration::from_secs(config.batch_window_secs),
-            max_requests: config.batch_max_requests,
+            _max_requests: config.batch_max_requests,
             proxy_state,
             pg_pool,
             redis,

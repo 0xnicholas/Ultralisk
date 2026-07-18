@@ -21,6 +21,16 @@ pub struct AppConfig {
     pub batch_max_requests: usize,
     pub cold_start_timeout_secs: u64,
     pub kai_scheduler_url: String,
+    pub health_check_interval_secs: u64,
+    pub health_check_timeout_secs: u64,
+    pub passive_check_window_size: u64,
+    pub passive_check_error_threshold: f64,
+    pub passive_check_latency_threshold_ms: u64,
+    pub passive_check_min_samples: u64,
+    pub passive_check_cooldown_secs: u64,
+    pub breaker_trip_count: u64,
+    pub breaker_cooldown_secs: u64,
+    pub breaker_probe_timeout_secs: u64,
 }
 
 impl AppConfig {
@@ -67,6 +77,16 @@ impl AppConfig {
             cold_start_timeout_secs: parse_or("COLD_START_TIMEOUT_SECS", 300u64),
             kai_scheduler_url: env::var("KAI_SCHEDULER_URL")
                 .unwrap_or_else(|_| "http://localhost:9090".into()),
+            health_check_interval_secs: parse_or("HEALTH_CHECK_INTERVAL_SECS", 5u64),
+            health_check_timeout_secs: parse_or("HEALTH_CHECK_TIMEOUT_SECS", 3u64),
+            passive_check_window_size: parse_or("PASSIVE_CHECK_WINDOW_SIZE", 100u64),
+            passive_check_error_threshold: parse_or("PASSIVE_CHECK_ERROR_THRESHOLD", 0.2f64),
+            passive_check_latency_threshold_ms: parse_or("PASSIVE_CHECK_LATENCY_THRESHOLD_MS", 10_000u64),
+            passive_check_min_samples: parse_or("PASSIVE_CHECK_MIN_SAMPLES", 10u64),
+            passive_check_cooldown_secs: parse_or("PASSIVE_CHECK_COOLDOWN_SECS", 30u64),
+            breaker_trip_count: parse_or("BREAKER_TRIP_COUNT", 3u64),
+            breaker_cooldown_secs: parse_or("BREAKER_COOLDOWN_SECS", 30u64),
+            breaker_probe_timeout_secs: parse_or("BREAKER_PROBE_TIMEOUT_SECS", 5u64),
         }
     }
 }

@@ -44,7 +44,7 @@ pub async fn observe(mut request: Request, next: Next) -> Response {
     let status = response.status();
     let duration = start.elapsed();
 
-    counter!(
+    let _ = counter!(
         "gateway_requests_total",
         "method" => method.clone(),
         "path" => metric_path.clone(),

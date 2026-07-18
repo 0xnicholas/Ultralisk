@@ -1,5 +1,6 @@
 use std::sync::atomic::{AtomicU64, Ordering};
 
+use crate::health_checker::{HealthChecker, PodHealth};
 use crate::types::RouteInfo;
 
 use super::table::{Pod, Pool, ROUTE_TABLE};
@@ -26,6 +27,80 @@ pub fn resolve(model_id: &str) -> Result<RouteInfo, (axum::http::StatusCode, &'s
     }
 
     let pod = select_pod(pool);
+
+    Ok(RouteInfo {
+        model_id: model_id.to_string(),
+        pool_name: pool.name.clone(),
+        pod_address: pod.address.clone(),
+        strategy: pool.strategy.clone(),
+    })
+}
+
+/// Resolve model_id → RouteInfo, skipping unhealthy pods.
+///
+/// When a health checker is provided, pods that are currently marked
+/// Unhealthy are excluded from selection. If all pods are unhealthy
+/// (or no health info is available yet), falls back to selecting from
+/// the full pool to avoid hard-downing a model due to stale health data.
+pub fn resolve_healthy(
+    model_id: &str,
+    health_checker: &HealthChecker,
+) -> Result<RouteInfo, (axum::http::StatusCode, &'static str)> {
+    let table = ROUTE_TABLE.load();
+
+    let pool = table
+        .routes
+        .get(model_id)
+        .ok_or((axum::http::StatusCode::NOT_FOUND, "model_not_found"))?;
+
+    if pool.pods.is_empty() {
+        return Err((axum::http::StatusCode::SERVICE_UNAVAILABLE, "model_not_available"));
+    }
+
+    // Filter to healthy pods
+    let healthy_pods: Vec<&Pod> = pool.pods.iter()
+        .filter(|p| {
+            match health_checker.get_pod_health(model_id, &pool.name, &p.id) {
+                Some(PodHealth::Healthy) => true,
+                Some(PodHealth::Unhealthy { .. }) => {
+                    tracing::debug!(
+                        model_id = %model_id,
+                        pod_id = %p.id,
+                        address = %p.address,
+                        "Skipping unhealthy pod in route selection"
+                    );
+                    false
+                }
+                Some(PodHealth::Removed) => false,
+                None => {
+                    // No health info yet — include the pod (safe default)
+                    true
+                }
+            }
+        })
+        .collect();
+
+    // If no healthy pods, fall back to all pods
+    let candidates: Vec<&Pod> = if healthy_pods.is_empty() {
+        tracing::warn!(
+            model_id = %model_id,
+            pool = %pool.name,
+            total_pods = pool.pods.len(),
+            "No healthy pods available — falling back to full pool"
+        );
+        pool.pods.iter().collect()
+    } else {
+        healthy_pods
+    };
+
+    // Build a temporary Pool from candidates for selection
+    let temp_pool = Pool {
+        name: pool.name.clone(),
+        strategy: pool.strategy.clone(),
+        pods: candidates.into_iter().cloned().collect(),
+    };
+
+    let pod = select_pod(&temp_pool);
 
     Ok(RouteInfo {
         model_id: model_id.to_string(),
@@ -127,6 +202,75 @@ mod tests {
         t::ROUTE_TABLE.store(Arc::new(RouteTable { routes, version: 1 }));
         let err = resolve("nonexistent").unwrap_err();
         assert_eq!(err.0.as_u16(), 404);
+    }
+
+    #[test]
+    fn test_resolve_healthy_skips_unhealthy_pod() {
+        let _lock = TEST_MUTEX.lock().unwrap();
+        reset_no_routes();
+        let pods = vec![
+            Pod { id: "healthy-1".into(), address: "10.0.0.1:8000".into(), weight: 1 },
+            Pod { id: "sick-1".into(), address: "10.0.0.2:8000".into(), weight: 1 },
+        ];
+        let mut routes = HashMap::new();
+        routes.insert("test".to_string(), Pool {
+            name: "pool".into(), strategy: "serverless".into(), pods,
+        });
+        t::ROUTE_TABLE.store(Arc::new(RouteTable { routes, version: 1 }));
+
+        let hc = crate::health_checker::HealthChecker::new(
+            crate::health_checker::HealthCheckerConfig { timeout_secs: 1, ..Default::default() }
+        );
+        // Mark sick-1 as unhealthy
+        hc.set_pod_health("test", "pool", "sick-1",
+            crate::health_checker::PodHealth::Unhealthy {
+                since: std::time::Instant::now(),
+                failures: 3,
+            });
+        // Mark healthy-1 as healthy
+        hc.set_pod_health("test", "pool", "healthy-1",
+            crate::health_checker::PodHealth::Healthy);
+
+        // Run multiple times — should always pick healthy-1
+        for _ in 0..5 {
+            let route = resolve_healthy("test", &hc).unwrap();
+            assert_eq!(route.pod_address, "10.0.0.1:8000", "should always route to healthy pod");
+        }
+    }
+
+    #[test]
+    fn test_resolve_healthy_falls_back_to_all_when_all_unhealthy() {
+        let _lock = TEST_MUTEX.lock().unwrap();
+        reset_no_routes();
+        let pods = vec![
+            Pod { id: "p1".into(), address: "10.0.0.1:8000".into(), weight: 1 },
+            Pod { id: "p2".into(), address: "10.0.0.2:8000".into(), weight: 1 },
+        ];
+        let mut routes = HashMap::new();
+        routes.insert("test".to_string(), Pool {
+            name: "pool".into(), strategy: "serverless".into(), pods,
+        });
+        t::ROUTE_TABLE.store(Arc::new(RouteTable { routes, version: 1 }));
+
+        let hc = crate::health_checker::HealthChecker::new(
+            crate::health_checker::HealthCheckerConfig { timeout_secs: 1, ..Default::default() }
+        );
+        // Both pods unhealthy
+        hc.set_pod_health("test", "pool", "p1",
+            crate::health_checker::PodHealth::Unhealthy {
+                since: std::time::Instant::now(), failures: 2,
+            });
+        hc.set_pod_health("test", "pool", "p2",
+            crate::health_checker::PodHealth::Unhealthy {
+                since: std::time::Instant::now(), failures: 2,
+            });
+
+        // Should fall back to full pool (not return error)
+        let route = resolve_healthy("test", &hc).unwrap();
+        assert!(
+            route.pod_address == "10.0.0.1:8000" || route.pod_address == "10.0.0.2:8000",
+            "should fall back to a pod even when all unhealthy"
+        );
     }
 
     #[test]

@@ -41,7 +41,7 @@ pub async fn handle_chat(
 ) -> Result<Response, AppError> {
     let upstream_url = format!("http://{}/v1/chat/completions", route.pod_address);
 
-    let upstream_start = std::time::Instant::now();
+    let _upstream_start = std::time::Instant::now();
     let response = state
         .http_client
         .post(&upstream_url)
@@ -66,7 +66,7 @@ pub async fn handle_chat(
     histogram!("gateway_upstream_duration_seconds",
         "model" => route.model_id.clone(),
         "pool" => route.pool_name.clone(),
-    ).record(upstream_start.elapsed().as_secs_f64());
+    ).record(_upstream_start.elapsed().as_secs_f64());
 
     // Extract usage from response (non-streaming path)
     if status.is_success() {
@@ -134,7 +134,7 @@ pub async fn handle_chat_stream(
 ) -> Result<Response, AppError> {
     let upstream_url = format!("http://{}/v1/chat/completions", route.pod_address);
 
-    let upstream_start = std::time::Instant::now();
+    let _upstream_start = std::time::Instant::now();
     let response = state
         .http_client
         .post(&upstream_url)

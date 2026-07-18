@@ -8,7 +8,6 @@ use axum::{
     response::Response,
 };
 use dashmap::DashMap;
-use metrics::counter;
 use redis::aio::MultiplexedConnection;
 use serde::Deserialize;
 use sha2::{Sha256, Digest};
