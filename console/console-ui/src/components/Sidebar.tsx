@@ -29,6 +29,7 @@ const SHARED_SECTIONS = [
     { label: 'GPU Utilization', icon: IconChartArea, path: '/gpu-utilization' },
     { label: 'Cost Analytics', icon: IconReportMoney, path: '/cost-analytics' },
     { label: 'Incidents', icon: IconAlertTriangle, path: '/incidents' },
+    { label: 'Alerts', icon: IconAlertTriangle, path: '/alerts' },
   ]},
 ];
 

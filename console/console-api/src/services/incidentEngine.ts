@@ -15,6 +15,7 @@ import { logger } from '../logger.js';
 import { fetchRelatedMetrics } from './incidentMetrics.js';
 import { analyzeIncident } from './aiDiagnosisService.js';
 import { executeRemediation } from './autoRemediationService.js';
+import { pushIncidentToSlack } from './slackBotService.js';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -371,6 +372,11 @@ async function runIncidentPipeline(inc: any, orgId: string | null): Promise<void
     if (diagnosis.recommendations && diagnosis.recommendations.length > 0 && orgId) {
       await executeRemediation(inc.id, orgId, diagnosis);
     }
+
+    // Push to Slack (fire-and-forget — must not block the pipeline)
+    pushIncidentToSlack(inc).catch((err: unknown) =>
+      logger.error({ err, incidentId: inc.id }, 'Slack push failed')
+    );
 
     logger.info({
       incidentId: inc.id,

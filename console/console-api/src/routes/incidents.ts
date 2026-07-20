@@ -24,7 +24,9 @@ router.get('/incidents/:id', async (req: Request, res: Response) => {
   try {
     const { rows: [inc] } = await pool.query('SELECT * FROM incidents WHERE id = $1', [req.params.id]);
     if (!inc) return res.status(404).json({ error: { code: 'not_found', message: 'Incident not found' } });
-    res.json({ data: inc });
+    const nodeId = inc.affected_entities?.node_id;
+    const metrics = nodeId ? await fetchRelatedMetrics({ nodeId }) : null;
+    res.json({ data: { ...inc, metrics } });
   } catch (err) {
     res.status(500).json({ error: { code: 'internal_error', message: 'Internal server error' } });
   }

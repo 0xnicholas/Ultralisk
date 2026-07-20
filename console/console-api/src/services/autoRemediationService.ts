@@ -4,9 +4,9 @@
  * Executes Tier 1/2/3 remediation actions based on AI diagnosis results.
  *
  * Tier System:
- *   Tier 1 — Low risk, fully automated (restart worker, clear cache)
+ *   Tier 1 — Low risk, fully automated (restart worker, notify support)
  *   Tier 2 — Medium risk, needs human approval (scale up, switch model)
- *   Tier 3 — High risk, human must execute (reboot node, rollback driver)
+ *   Tier 3 — High risk, human must execute (reboot node, rollback model)
  *
  * All actions are logged to incidents.action_log for full audit trail.
  */
@@ -19,7 +19,6 @@ import type { DiagnosisResult } from './aiDiagnosisService.js';
 
 export type RemediationActionType =
   | 'restart_worker'
-  | 'clear_cache'
   | 'scale_up'
   | 'switch_model'
   | 'rollback_model'
@@ -78,45 +77,70 @@ export interface RemediationResult {
  */
 const EXECUTORS: Record<RemediationActionType, (target: string, reason: string) => Promise<{ success: boolean; message: string }>> = {
   async restart_worker(target, reason) {
-    // TODO Phase D: kubectl delete pod <target> on the worker node
-    logger.info({ target, reason }, '[remediation] restart_worker');
-    return { success: true, message: `Worker ${target} restart initiated` };
-  },
-
-  async clear_cache(target, reason) {
-    // TODO Phase D: SSH/API call to clear GPU cache on target node
-    logger.info({ target, reason }, '[remediation] clear_cache');
-    return { success: true, message: `Cache clear initiated on ${target}` };
+    const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:8080';
+    const modelId = target.replace(/^(model|deployment)[-\s]?/i, '');
+    logger.info({ target, reason, modelId }, '[remediation] restart_worker via Gateway warmup');
+    try {
+      const resp = await fetch(`${GATEWAY_URL}/v1/admin/models/${encodeURIComponent(modelId)}/warmup`, { method: 'POST' });
+      if (resp.ok) return { success: true, message: `Worker warmup triggered for ${modelId} via Gateway` };
+      const body = await resp.text().catch(() => '');
+      return { success: false, message: `Gateway warmup returned ${resp.status}: ${body.slice(0, 200)}` };
+    } catch (err: any) {
+      return { success: false, message: `Gateway unreachable (KAI unavailable): ${err.message}` };
+    }
   },
 
   async scale_up(target, reason) {
-    // TODO Phase D: PATCH /v1/admin/deployments/:id to increase replicas
-    logger.info({ target, reason }, '[remediation] scale_up');
-    return { success: true, message: `Scale-up of ${target} submitted` };
+    const CONSOLE_URL = process.env.CONSOLE_URL || 'http://localhost:3100';
+    const deploymentId = target.replace(/^deployment[-\s]?/i, '');
+    logger.info({ target, reason, deploymentId }, '[remediation] scale_up via Console API');
+    try {
+      const resp = await fetch(`${CONSOLE_URL}/v1/admin/deployments/${encodeURIComponent(deploymentId)}/scale`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ increment: 1 }) });
+      if (resp.ok) return { success: true, message: `Scale-up submitted for deployment ${deploymentId}` };
+      const body = await resp.text().catch(() => '');
+      return { success: false, message: `Scale-up returned ${resp.status}: ${body.slice(0, 200)}` };
+    } catch (err: any) {
+      return { success: false, message: `Console API unreachable: ${err.message}` };
+    }
   },
 
   async switch_model(target, reason) {
-    // TODO Phase D: Update route table to point to fallback model
-    logger.info({ target, reason }, '[remediation] switch_model');
-    return { success: true, message: `Model switch to ${target} initiated` };
+    const GATEWAY_URL = process.env.GATEWAY_URL || 'http://localhost:8080';
+    // fallback_model_id is loaded from auto_remediation_settings.tiers JSONB (top-level)
+    // and passed as the target by the policy-aware caller.
+    // The PATCH weight endpoint accepts { model, pod_address, weight }.
+    // For a model-wide switch, the Gateway's internal weight API needs the model identifier.
+    const modelId = target.replace(/^(model|deployment)[-\s]?/i, '');
+    logger.info({ target, reason, modelId }, '[remediation] switch_model via Gateway route weight');
+    // This is a no-op until KAI/re-route integration is available;
+    // the Gateway weight API requires pod-level granularity.
+    return { success: false, message: `Model switch to ${modelId} logged — Gateway weight API requires K8s pod awareness (Phase 2+)` };
   },
 
   async rollback_model(target, reason) {
-    // TODO Phase D: Rollback deployment to previous version
-    logger.info({ target, reason }, '[remediation] rollback_model');
-    return { success: true, message: `Rollback to ${target} submitted` };
+    const CONSOLE_URL = process.env.CONSOLE_URL || 'http://localhost:3100';
+    const deploymentId = target.replace(/^deployment[-\s]?/i, '');
+    logger.info({ target, reason, deploymentId }, '[remediation] rollback_model via Console API');
+    try {
+      const resp = await fetch(`${CONSOLE_URL}/v1/admin/deployments/${encodeURIComponent(deploymentId)}/rollback`, { method: 'POST' });
+      if (resp.ok) return { success: true, message: `Rollback submitted for deployment ${deploymentId}` };
+      const body = await resp.text().catch(() => '');
+      return { success: false, message: `Rollback returned ${resp.status}: ${body.slice(0, 200)}` };
+    } catch (err: any) {
+      return { success: false, message: `Console API unreachable: ${err.message}` };
+    }
   },
 
   async reboot_node(target, reason) {
-    // TODO Phase D: Cord + drain + reboot the K8s node
-    logger.info({ target, reason }, '[remediation] reboot_node');
-    return { success: true, message: `Node ${target} reboot scheduled` };
+    logger.info({ target, reason }, '[remediation] reboot_node — skipped (K8s API unavailable)');
+    return { success: false, message: 'K8s API unavailable — node reboot deferred (Phase 2+)' };
   },
 
   async notify_support(target, reason) {
-    // TODO Phase D: Create support ticket or Slack notification
-    logger.info({ target, reason }, '[remediation] notify_support');
-    return { success: true, message: `Support notified: ${reason}` };
+    // Logged to action_log and console; Slack push is handled by incidentEngine's
+    // runIncidentPipeline so this executor just acknowledges.
+    logger.warn({ target, reason }, '[remediation] notify_support — incident requires manual attention');
+    return { success: true, message: `Support notified via action_log: ${reason}` };
   },
 };
 
@@ -143,7 +167,7 @@ export async function loadPolicy(orgId: string): Promise<RemediationPolicy> {
       tiers: {
         tier1: {
           enabled: tiers.tier1?.enabled !== false,
-          allowedActions: tiers.tier1?.allowedActions || ['restart_worker', 'clear_cache', 'notify_support'],
+          allowedActions: tiers.tier1?.allowedActions || ['restart_worker', 'notify_support'],
         },
         tier2: {
           enabled: tiers.tier2?.enabled !== false,
@@ -166,9 +190,9 @@ function defaultPolicy(orgId: string): RemediationPolicy {
     orgId,
     enabled: true,
     tiers: {
-      tier1: { enabled: true, allowedActions: ['restart_worker', 'clear_cache', 'notify_support'] },
-      tier2: { enabled: true, allowedActions: ['scale_up', 'switch_model', 'notify_support'] },
-      tier3: { enabled: true, allowedActions: ['rollback_model', 'reboot_node', 'notify_support'] },
+    tier1: { enabled: true, allowedActions: ['restart_worker', 'notify_support'] },
+    tier2: { enabled: true, allowedActions: ['scale_up', 'switch_model', 'notify_support'] },
+    tier3: { enabled: true, allowedActions: ['rollback_model', 'reboot_node', 'notify_support'] },
     },
   };
 }
@@ -184,10 +208,8 @@ function recommendationToAction(rec: { action: string; risk: string; tier: numbe
 
   // Heuristic: infer action type from recommendation text
   let type: RemediationActionType;
-  if (actionText.includes('restart') || actionText.includes('reboot worker') || actionText.includes('kill')) {
+  if (actionText.includes('restart') || actionText.includes('reboot worker') || actionText.includes('kill') || actionText.includes('cache') || actionText.includes('clear')) {
     type = 'restart_worker';
-  } else if (actionText.includes('cache') || actionText.includes('clear')) {
-    type = 'clear_cache';
   } else if (actionText.includes('scale') || actionText.includes('increase') || actionText.includes('add replica')) {
     type = 'scale_up';
   } else if (actionText.includes('switch') || actionText.includes('fallback') || actionText.includes('alternative model')) {

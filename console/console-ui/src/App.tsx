@@ -41,6 +41,7 @@ const DeploymentsPage = lazy(() => import('@/pages/deployments/DeploymentsPage')
 const DeploymentDetailPage = lazy(() => import('@/pages/deployments/DeploymentDetailPage').then((m) => ({ default: m.DeploymentDetailPage })));
 const GpuUtilizationPage = lazy(() => import('@/pages/gpu-utilization/GpuUtilizationPage').then((m) => ({ default: m.GpuUtilizationPage })));
 const CostAnalyticsPage = lazy(() => import('@/pages/cost-analytics/CostAnalyticsPage').then((m) => ({ default: m.CostAnalyticsPage })));
+const AlertsPage = lazy(() => import('@/pages/alerts/AlertsPage').then((m) => ({ default: m.AlertsPage })));
 const IncidentsPage = lazy(() => import('@/pages/incidents/IncidentsPage').then((m) => ({ default: m.IncidentsPage })));
 const IncidentDetailPage = lazy(() => import('@/pages/incidents/IncidentDetailPage').then((m) => ({ default: m.IncidentDetailPage })));
 const OperationsSettingsPage = lazy(() => import('@/pages/settings/OperationsSettingsPage').then((m) => ({ default: m.OperationsSettingsPage })));
@@ -124,6 +125,7 @@ export function App() {
                     <Route path="/cost-analytics" element={<CostAnalyticsPage />} />
                     <Route path="/incidents" element={<IncidentsPage />} />
                     <Route path="/incidents/:id" element={<IncidentDetailPage />} />
+                    <Route path="/alerts" element={<AlertsPage />} />
                     <Route path="/settings/organization" element={<OrganizationPage />} />
                     <Route path="/settings/operations" element={<OperationsSettingsPage />} />
                     <Route path="/settings/integrations" element={<IntegrationsPage />} />

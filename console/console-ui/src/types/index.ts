@@ -325,6 +325,7 @@ export interface IncidentRootCause { cause: string; confidence: number; evidence
 export interface IncidentRecommendation { action: string; risk: 'low' | 'medium' | 'high'; description: string; }
 export interface IncidentActionLog { timestamp: string; user_id: string; action: string; result: string; }
 export interface IncidentConversation { timestamp: string; role: 'user' | 'assistant'; content: string; }
+export interface IncidentMetrics { utilizationPct: number[]; memoryUsedMb: number[]; temperature: number[]; timestamps: string[]; }
 export interface Incident {
   id: string; severity: 'critical' | 'warning'; status: 'open' | 'investigating' | 'mitigated' | 'resolved' | 'suppressed';
   title: string; description: string; detection_type: string;
@@ -332,6 +333,7 @@ export interface Incident {
   ai_analysis: { model_used: string; completed_at: string; root_causes: IncidentRootCause[]; recommendations: IncidentRecommendation[]; summary: string; };
   conversation_history: IncidentConversation[];
   action_log: IncidentActionLog[];
+  metrics?: IncidentMetrics;
   triggered_at: string; mitigated_at: string | null; resolved_at: string | null; suppressed_at: string | null;
 }
 

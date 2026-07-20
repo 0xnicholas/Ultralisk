@@ -43,6 +43,7 @@ import pool from './db/index.js';
 import { startUsageCron, releaseUsageCronLock } from './services/usageCron.js';
 import { startGpuMetricsCollector } from './services/gpuMetricsCollector.js';
 import { startIncidentEngine } from './services/incidentEngine.js';
+import { startSlackBot, stopSlackBot } from './services/slackBotService.js';
 import { initClickHouse } from './services/clickhouseClient.js';
 import { migrateClickHouse } from './services/clickhouseMigrate.js';
 import { auditMiddleware } from './services/auditLog.js';
@@ -87,6 +88,7 @@ migrate().catch((err) => logger.error({ err }, 'migrate failed at boot'));
 startUsageCron();
 startGpuMetricsCollector();
 startIncidentEngine();
+startSlackBot().catch((err) => logger.warn({ err }, 'Slack bot start skipped'));
 
 // Initialize ClickHouse asynchronously (non-blocking — falls back to PG)
 initClickHouse()
@@ -216,6 +218,7 @@ server.on('error', (err: NodeJS.ErrnoException) => {
 
 async function shutdown(signal: string) {
   logger.info({ signal }, 'shutting down');
+  await stopSlackBot().catch((err: unknown) => logger.error({ err }, 'Slack bot shutdown failed'));
   server.close(async () => {
     // Release PG advisory locks held by the usage cron before closing the pool
     await releaseUsageCronLock();
